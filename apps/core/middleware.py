@@ -9,6 +9,7 @@ class UrlPatterns:
             setattr(request, 'urlconf', 'events_urls')
         return None
 
+
 class SecureRequiredMiddleware(object):
     def __init__(self):
         self.paths = getattr(settings, 'SECURE_REQUIRED_PATHS')
