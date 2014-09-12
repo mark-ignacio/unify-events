@@ -3,7 +3,7 @@ from django.template.defaultfilters import slugify
 import events.models
 
 
-def generate_unique_slug(title, clazz, unique):
+def generate_slug(title, clazz, unique=False):
     """
     Generate a unique slug for the given class
     """
@@ -31,7 +31,7 @@ def pre_save_slug(sender, **kwargs):
     Generate a slug before the object is saved
     """
     instance = kwargs['instance']
-    instance.slug = generate_unique_slug(instance.title, sender, False)
+    instance.slug = generate_slug(instance.title, sender, False)
 
 
 def pre_save_unique_slug(sender, **kwargs):
@@ -39,7 +39,7 @@ def pre_save_unique_slug(sender, **kwargs):
     Generate a slug before the object is saved
     """
     instance = kwargs['instance']
-    instance.slug = generate_unique_slug(instance.title, sender, True)
+    instance.slug = generate_slug(instance.title, sender, True)
 
 
 def format_to_mimetype(format):
