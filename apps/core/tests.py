@@ -1,9 +1,11 @@
 from django.conf import settings
+import django.db.models.signals as signals
 from django.http import HttpRequest
 from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import Client
 from django.test.utils import override_settings
+import django.template.defaultfilters as temp_filters
 
 from core.middleware import MinifyHTMLMiddleware
 from core.middleware import UrlPatterns
@@ -57,15 +59,15 @@ class MiddlewareTestCase(TestCase):
         of URL paths.
         """
         response = self.client.get('/calendar/' + str(self.calendar_two.pk) + '/' + self.calendar_two.slug + '/', {})
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
 
         response = self.client.get('/manager/', {})
-        self.assertEquals(301, response.status_code)
+        self.assertEqual(301, response.status_code)
         self.assertTrue(response.url.startswith('https'))
 
         response = self.client.get('/manager', {}, follow=True)
         redirect = response.redirect_chain[1]
-        self.assertEquals(301, redirect[1])
+        self.assertEqual(301, redirect[1])
         self.assertTrue(redirect[0].startswith('https'))
 
     @override_settings(COMPRESS_HTML=True)
@@ -80,13 +82,36 @@ class MiddlewareTestCase(TestCase):
         correct_content = '<div>Hello, how are you doing.</div>'
         self.response.content = correct_content
         response = minify_middleware.process_response(self.request, self.response)
-        self.assertEquals(correct_content, response.content)
+        self.assertEqual(correct_content, response.content)
 
         self.response.content = ' ' + correct_content + '   '
         response = minify_middleware.process_response(self.request, self.response)
-        self.assertEquals(' ' + correct_content + ' ', response.content)
+        self.assertEqual(' ' + correct_content + ' ', response.content)
 
         self.response.content = '<div>Hello, how   are you doing.  </div>'
         response = minify_middleware.process_response(self.request, self.response)
-        self.assertEquals('<div>Hello, how are you doing. </div>', response.content)
+        self.assertEqual('<div>Hello, how are you doing. </div>', response.content)
 
+
+class UtilsTestCase(TestCase):
+    def test_slug_creation(self):
+        """
+        Test generating non-unique slugs
+        """
+        calendar_one = Calendar.objects.create(title='UCF Events', description='The description...')
+        calendar_two = Calendar.objects.create(title='UCF Events', description='The description...')
+        self.assertEqual(temp_filters.slugify(calendar_one.title), calendar_one.slug)
+        self.assertEqual(temp_filters.slugify(calendar_two.title), calendar_two.slug)
+        self.assertEqual(calendar_one.slug, calendar_two.slug)
+
+    def test_unique_slug(self):
+        """
+        Test generating non-unique slugs
+        """
+        import core.utils as core_utils
+        signals.pre_save.connect(core_utils.pre_save_unique_slug, sender=Calendar)
+        calendar_one = Calendar.objects.create(title='UCF Events', description='The description...')
+        calendar_two = Calendar.objects.create(title='UCF Events', description='The description...')
+        self.assertEqual(temp_filters.slugify(calendar_one.title), calendar_one.slug)
+        self.assertEqual(temp_filters.slugify(calendar_two.title) + '-1', calendar_two.slug)
+        self.assertNotEqual(calendar_one.slug, calendar_two.slug)
