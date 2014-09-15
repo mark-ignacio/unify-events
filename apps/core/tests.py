@@ -5,15 +5,20 @@ from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import Client
 from django.test.utils import override_settings
+from django.template import TemplateDoesNotExist
 import django.template.defaultfilters as temp_filters
 
 from core.middleware import MinifyHTMLMiddleware
 from core.middleware import UrlPatterns
 from events.models import Calendar
 
+
 class MiddlewareTestCase(TestCase):
     def setUp(self):
         self.calendar = Calendar.objects.create(title='UCF Events', description='The description...')
+        # Created a second calendar since the first calendar could redirect
+        # based on the url patterns for the fron page calendar
+        # (settings.FRONT_PAGE_CALENDAR_PK).
         self.calendar_two = Calendar.objects.create(title='Second Calendar', description='The description...')
         self.request = HttpRequest()
         self.response = HttpResponse()
@@ -115,3 +120,32 @@ class UtilsTestCase(TestCase):
         self.assertEqual(temp_filters.slugify(calendar_one.title), calendar_one.slug)
         self.assertEqual(temp_filters.slugify(calendar_two.title) + '-1', calendar_two.slug)
         self.assertNotEqual(calendar_one.slug, calendar_two.slug)
+
+
+
+class ViewsTestCase(TestCase):
+    def setUp(self):
+        self.calendar_one = Calendar.objects.create(title='UCF Events', description='The description...')
+        self.calendar_two = Calendar.objects.create(title='Second Calendar', description='The description...')
+        self.client = Client()
+
+    def test_esi_template(self):
+        """
+        Test esi template
+        """
+        response = self.client.get('/esi/template/esi/template/header.html')
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('<i class="fa fa-home"></i>Events at UCF</a>' in response.content)
+
+        self.assertRaises(TemplateDoesNotExist, self.client.get, path='/esi/template/esi/template/random.html')
+
+    def test_esi(self):
+        """
+        Test model based esi retieval.
+        """
+        response = self.client.get('/esi/calendar/1/link/')
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('<a href=' in response.content)
+
+        response = self.client.get('/esi/sdf/1/link/')
+        self.assertEqual(404, response.status_code)

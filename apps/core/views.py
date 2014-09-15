@@ -39,24 +39,25 @@ def esi(request, model_name, object_id, template_name, calendar_id=None, params=
             app_label = 'taggit'
 
         model = get_model(app_label=app_label, model_name=model_name)
-        object_id_int = int(object_id)
-        the_object = model.objects.get(pk=object_id_int)
-        template_html = template_name.replace('/', '') + '.html'
-        url = 'esi/' + model_name + '/' + template_html
+        if model is not None:
+            object_id_int = int(object_id)
+            the_object = model.objects.get(pk=object_id_int)
+            template_html = template_name.replace('/', '') + '.html'
+            url = 'esi/' + model_name + '/' + template_html
 
-        context = { 'object': the_object }
-        
-        # Add params, if any, to context.
-        if params:
-            params = parse_qs(params)
-            context.update(params)
+            context = { 'object': the_object }
 
-        if calendar_id is not None and calendar_id != 'None':
-            calendar_id_int = int(calendar_id)
-            calendar = Calendar.objects.get(pk=calendar_id_int)
-            context['calendar'] = calendar
+            # Add params, if any, to context.
+            if params:
+                params = parse_qs(params)
+                context.update(params)
 
-        return render_to_response(url, context, RequestContext(request))
+            if calendar_id is not None and calendar_id != 'None':
+                calendar_id_int = int(calendar_id)
+                calendar = Calendar.objects.get(pk=calendar_id_int)
+                context['calendar'] = calendar
+
+            return render_to_response(url, context, RequestContext(request))
     except TypeError:
         log.error('Unable to convert ID to int for model %s from app %s. Object ID: %s ; Calendar ID: %s' % (model_name, app_label, object_id, calendar_id))
     except LookupError:
@@ -232,7 +233,7 @@ class InvalidSlugRedirectMixin(object):
 
     Useful for redirecting urls with an incorrect object slug to the correct
     url when an object's name has changed.
-    
+
     Note that this mixin assumes its view utilizes a consistent url
     schema, where the by_model is referenced in the url by '/<by_model>_pk/<by_model>/'
     and an additional calendar filter is referenced by '/<pk>/<slug>/'.
@@ -284,7 +285,7 @@ class InvalidSlugRedirectMixin(object):
             # prevent feed.None from being passed into new redirect url
             if 'format' in r_kwargs and r_kwargs['format'] is None:
                 r_kwargs.pop('format', None)
-                
+
             return HttpResponsePermanentRedirect(reverse(url_name, kwargs=r_kwargs))
         else:
             return super(InvalidSlugRedirectMixin, self).dispatch(request, *args, **kwargs)
