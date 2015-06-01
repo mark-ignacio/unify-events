@@ -4,9 +4,9 @@ from django.contrib.contenttypes.models import ContentType
 
 
 class TimeCreatedModified(models.Model):
+
     """
-    Base model to be used my most models. Includes a
-    modified and created date.
+    Base model to be used my most models. Includes a modified and created date.
     """
     modified = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -16,6 +16,7 @@ class TimeCreatedModified(models.Model):
 
 
 class ContentTypeMixin(object):
+
     @property
     def model_content_type(self):
         return ContentType.objects.get(app_label=self._meta.app_label, model=self._meta.object_name)
@@ -23,7 +24,12 @@ class ContentTypeMixin(object):
 
 def longer_first_last(sender, *args, **kwargs):
     """
-    Change the max length of the first and last name
+    Change the max length of the first and last name.
+
+    Args:
+      sender (obj): The model class.
+      *args: Variable length argument list.
+      **kwargs: Arbitrary keyword arguments.
     """
     if sender.__name__ == 'User' and sender.__module__ == 'django.contrib.auth.models':
         sender._meta.get_field('first_name').max_length = 75
