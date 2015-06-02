@@ -20,7 +20,16 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def include_esi_template(context, template, params='', kwargs=None):
     """
-    Return ESI code if not in Development mode.
+    Determines what ESI template to render.
+
+    Args:
+      context  (dict): The request object via context.
+      template (str): The template name to load.
+      params   (str): The query string.
+      **kwargs: Arbitrary keyword arguments.
+
+    Returns:
+      str: ESI tag if development mode is enabled.
     """
     if settings.DEV_MODE:
         return render_to_string(template, context)
@@ -34,26 +43,60 @@ def include_esi_template(context, template, params='', kwargs=None):
 
 
 @register.simple_tag(takes_context=True)
-def include_esi(context, model, object_id, template_name, calendar_id=None, params=None):
+def include_esi(context, model, object_id,
+                template_name, calendar_id=None, params=None):
+    """
+    Determines what ESI template to render.
+
+    Args:
+      context       (dict): The request object via context.
+      model:        (str): The model name.
+      object_id     (int): The model ID.
+      template_name (str): The name of the template.
+      calendar_id   (int): The calendar ID.
+      params        (str): The query string.
+
+    Returns:
+      str: The ESI tag if development mode is enabled.
+    """
     if settings.DEV_MODE:
-        response = esi(context['request'], model, str(object_id), template_name, str(calendar_id), params)
+        response = esi(
+            context['request'],
+            model,
+            str(object_id),
+            template_name,
+            str(calendar_id),
+            params)
         return response.content
     else:
         if calendar_id is not None:
-            url = '/esi/' + model + '/' + str(object_id) + '/calendar/' + str(calendar_id) + '/' + template_name + '/'
+            url = '/esi/' + model + '/' + str(
+                object_id) + '/calendar/' + str(
+                calendar_id) + '/' + template_name + '/'
         else:
-            url = '/esi/' + model + '/' + str(object_id) + '/' + template_name + '/'
+            url = '/esi/' + model + '/' + \
+                str(object_id) + '/' + template_name + '/'
 
         if params:
             url = url + '?' + params
         # Keep the single quotes around src='' so that it doesn't mess
         # up ESIs that are used for HTML classes
-        # Example: <div class="pull-left <esi:include src='/esi/category/1/slug/' />"></div>
+        # Example: <div class="pull-left <esi:include
+        # src='/esi/category/1/slug/' />"></div>
         return "<esi:include src='%s' />" % url
 
 
 @register.filter
 def parse_date(value):
+    """
+    Parses a given date time string.
+
+    Args:
+      value (str): The date time (e.g., "Thu Sep 25 10:36:28 BRST 2003").
+
+    Returns:
+      str: The parsed date string.
+    """
     if isinstance(value, basestring):
         value = parser.parse(value)
     return value
@@ -61,6 +104,24 @@ def parse_date(value):
 
 @register.filter
 def quote_plus(value):
+    """
+    Encodes special characters for a given URL string.
+
+    Args:
+      value (str): The specified URL to encode.
+
+    Returns:
+      str: The encoded URL string.
+
+    Example:
+      >>> params = dict(space=' ', array='[]', tilde='~')
+      >>> for desc, encoded in params.items():
+      ...     print '{0} gets encoded to {1}'.format(desc, quote_plus(encoded))
+      ...
+      array gets encoded to %5B%5D
+      tilde gets encoded to %7E
+      space gets encoded to +
+    """
     return urllib.quote_plus(value.encode('utf-8'))
 
 
@@ -80,9 +141,14 @@ for setting, kwarg in possible_settings.iteritems():
 
 def custom_clean(value):
     """
-    Custom function that uses Bleach and BeautifulSoup to remove
-    unwanted markup and contents.
-    Uses settings from the django-bleach module.
+    Custom function that uses Bleach and BeautifulSoup to remove unwanted
+    markup and contents. Uses settings from the django-bleach module.
+
+    Args:
+      value (str): The given HTML markup.
+
+    Returns:
+      unicode: The sanitized HTML markup (unicode).
     """
     if value:
         # not None or empty string
@@ -108,6 +174,14 @@ def custom_clean(value):
 
 @register.filter(name='custom_clean')
 def custom_clean_safe(value):
+    """Custom template filter to safely remove markup contents.
+
+    Args:
+      values (str): The given HTML markup text.
+
+    Returns:
+      obj: The marked safe string (django.utils.safestring.SafeBytes).
+    """
     if value is None:
         value = ''
 
@@ -124,6 +198,12 @@ def custom_clean_safe(value):
 def clean_and_linkify(value):
     """
     Removes unwanted HTML markup and contents and auto-generates link tags.
+
+    Args:
+      value (str): The given HTML markup text to mark safe.
+
+    Returns:
+      obj: The marked safe string (django.utils.safestring.SafeBytes).
     """
     if value is None:
         value = ''
@@ -146,6 +226,12 @@ def custom_clean_escapeics(value):
     """
     Converts HTML markup to plaintext suitable for ICS format.
     Runs custom_clean() to ensure content is safe.
+
+    Args:
+      value (str): The given HTML markup text to mark safe.
+
+    Returns:
+      obj: The marked safe string (django.utils.safestring.SafeBytes).
     """
     if value is None:
         value = ''
@@ -158,7 +244,8 @@ def custom_clean_escapeics(value):
     h2t.body_width = 0
     value = h2t.handle(value)
 
-    # Make sure newlines are encoded properly. http://stackoverflow.com/a/12249023
+    # Make sure newlines are encoded properly.
+    # http://stackoverflow.com/a/12249023
     value = value.replace('\n', '\\n')
 
     # Make sure we actually have something left to display
@@ -171,7 +258,13 @@ def custom_clean_escapeics(value):
 @register.filter
 def custom_clean_escapejs(value):
     """
-    Converts HTML markup to a string that is Javascript-safe.
+    Converts HTML markup to a string that is JavaScript-safe.
+
+    Args:
+      value (str): The given JavaScript text to mark safe.
+
+    Returns:
+      obj: The marked safe string (django.utils.safestring.SafeBytes).
     """
     if value is None:
         value = ''
@@ -192,10 +285,18 @@ def custom_clean_escapejs(value):
 @register.filter
 def custom_clean_escapexml(value):
     """
-    Cleans xml text based on w3 standards http://www.w3.org/TR/REC-xml/
+    Cleans xml text based on w3 standards (http://www.w3.org/TR/REC-xml/).
 
-    Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]  /* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
-    """
+    Note:
+      Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] |
+               [#x10000-#x10FFFF]
+
+    Args:
+      value (str): The given XML text to mark safe.
+
+    Returns:
+      obj: The marked safe string (django.utils.safestring.SafeBytes).
+   """
     if value is None:
         value = ''
 
