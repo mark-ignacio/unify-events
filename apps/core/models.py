@@ -6,7 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 class TimeCreatedModified(models.Model):
 
     """
-    Base model to be used my most models. Includes a modified and created date.
+    Base model to be used my most models. Includes a modified and created
+    date.
     """
     modified = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)

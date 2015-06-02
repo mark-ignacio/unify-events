@@ -58,8 +58,8 @@ def pre_save_unique_slug(sender, **kwargs):
 
 
 def format_to_mimetype(format):
-    """Provides a mapping between frontend document formats and mimetypes to be
-    returned with the resulting response.
+    """Provides a mapping between frontend document formats and mimetypes to
+    be returned with the resulting response.
 
     Args:
       format (str): The format type of the response.

@@ -271,7 +271,8 @@ class MultipleFormatTemplateViewMixin(object):
 
     def get_template_names(self):
         """
-        Return the template name based on the format requested.
+        Returns:
+          str: the template name based on the format requested.
         """
         format = self.get_format()
         return [self.template_name + format]
