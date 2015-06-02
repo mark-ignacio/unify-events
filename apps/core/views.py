@@ -178,19 +178,18 @@ class FirstLoginTemplateMixin(object):
 
 class SuperUserRequiredMixin(object):
 
-    """
-    Require that the user accessing the view is a superuser.
-
-    Args:
-      request (obj): The HttpRequest object.
-      *args: Variable length argument list.
-      **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-      obj: 403 Forbidden if False.
-    """
-
     def dispatch(self, request, *args, **kwargs):
+        """
+        Ensures that the user accessing the view is a superuser.
+
+        Args:
+          request (obj): The HttpRequest object.
+          *args: Variable length argument list.
+          **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+          obj: 402 Forbidden if False.
+        """
         if not request.user.is_superuser:
             return HttpResponseForbidden('You do not have permission to access this page.')
         else:
@@ -208,14 +207,14 @@ class DeleteSuccessMessageMixin(object):
         """
         Set a success message if one exists.
 
-       Args:
+        Args:
           request (obj): The HttpRequest object.
           *args: Variable length argument list.
           **kwargs: Arbitrary keyword arguments.
 
-       Returns:
-         obj: The response object containing a success message.
-       """
+        Returns:
+          obj: The response object containing a success message.
+        """
         httpResponse = super(
             DeleteSuccessMessageMixin,
             self).delete(request,
@@ -227,6 +226,12 @@ class DeleteSuccessMessageMixin(object):
         return httpResponse
 
     def get_success_message(self):
+        """
+        Gets a success message for the DeleteView class.
+
+        Returns:
+          str: The success message.
+        """
         return self.success_message
 
 
@@ -293,20 +298,19 @@ class MultipleFormatTemplateViewMixin(object):
 
 class PaginationRedirectMixin(object):
 
-    """
-    Attempts to redirect to the last valid page in a paginated list if the
-    requested page does not exist (instead of returning a 404.)
-
-    Args:
-      request (obj): The HttpRequest object.
-      *args: Variable length argument list.
-      **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-      obj: The HttpResponse object.
-   """
-
     def dispatch(self, request, *args, **kwargs):
+        """
+        Attempts to redirect to the last valid page in a paginated list if the
+        requested page does not exist (instead of returning a 404.)
+
+        Args:
+          request (obj): The HttpRequest object.
+          *args: Variable length argument list.
+          **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+          obj: The HttpResponse object.
+        """
         r_kwargs = request.resolver_match.kwargs
         queryset = self.get_queryset()
         page_size = self.get_paginate_by(queryset)

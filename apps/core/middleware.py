@@ -6,31 +6,29 @@ from django.http import HttpResponsePermanentRedirect
 
 class UrlPatterns:
 
-    """Handles and processes event-based requests.
-
-    Args:
-      request (obj): The HttpRequest object.
-    """
-
     def process_request(self, request):
+        """Handles and processes event-based requests.
+
+        Args:
+          request (obj): The HttpRequest object.
+        """
         if re.match('^/events/', request.path_info):
             setattr(request, 'urlconf', 'events_urls')
 
 
 class CorsRegex:
 
-    """Determines if the requested resource can be granted access based on the
-    properties of the response.
-
-    Args:
-      request  (obj): The HttpRequest object.
-      response (obj): The HttpResponse object.
-
-    Returns:
-      obj: The response data.
-    """
-
     def process_response(self, request, response):
+        """Determines if the requested resource can be granted access based on
+        the properties of the response.
+
+        Args:
+          request  (obj): The HttpRequest object.
+          response (obj): The HttpResponse object.
+
+        Returns:
+          obj: The response data.
+        """
         if re.match(settings.CORS_REGEX, request.path):
             response['Access-Control-Allow-Origin'] = '*'
         else:
@@ -54,16 +52,15 @@ class SecureRequiredMiddleware(object):
         self.paths = getattr(settings, 'SECURE_REQUIRED_PATHS')
         self.enabled = self.paths and getattr(settings, 'HTTPS_SUPPORT')
 
-    """Adds support layer for handling HTTPS.
-
-    Args:
-      request (obj): The HttpRequest object.
-
-    Returns:
-      int: 301 HTTP status code, otherwise None.
-    """
-
     def process_request(self, request):
+        """Adds support layer for handling HTTPS.
+
+        Args:
+          request (obj): The HttpRequest object.
+
+        Returns:
+          int: 301 HTTP status code, otherwise None.
+        """
         if self.enabled and not request.is_secure():
             for path in self.paths:
                 if request.get_full_path().startswith(path):
@@ -85,17 +82,16 @@ RE_MULTISPACE = re.compile(r"\s{2,}")
 
 class MinifyHTMLMiddleware(object):
 
-    """Removes "inconsistent" whitespace within response text.
-
-    Args:
-      request  (obj): The HttpRequest object.
-      response (obj): The HttpResponse object.
-
-    Returns:
-      obj: The sanitized response.
-    """
-
     def process_response(self, request, response):
+        """Removes "inconsistent" whitespace within response text.
+
+        Args:
+          request  (obj): The HttpRequest object.
+          response (obj): The HttpResponse object.
+
+        Returns:
+          obj: The sanitized response.
+        """
         if 'text/html' in response['Content-Type'] and settings.COMPRESS_HTML:
             response.content = RE_MULTISPACE.sub(" ", response.content)
         return response
