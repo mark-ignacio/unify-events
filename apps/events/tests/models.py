@@ -1,11 +1,11 @@
 """
-This demonstrates how model objects can be tested.
+This file demonstrates how models can be tested within Unify Events.
 """
-
-from faker import Faker
 
 from django.test import TestCase
 from django.conf import settings
+
+from faker import Factory
 
 from django.contrib.auth.models import User
 
@@ -21,6 +21,9 @@ class CalendarTestCase(TestCase):
     Test Calendar model.
     """
 
+    def setUp(self):
+        self.fake = Factory.create('en_US')
+
     def test_calendar_subclasses_time_created_modified(self):
         """
         Tests that the calendar model is a subclass of `TimeCreatedModified`.
@@ -32,52 +35,49 @@ class CalendarTestCase(TestCase):
         Tests that the calendar model contains specific callable attributes.
         """
         attributes = ['title', 'slug', 'description']
-        self.assertTrue(all(hasattr(Calendar, i) for i in attributes))
+        self.assertTrue(all(hasattr(Calendar, attr) for attr in attributes))
 
     def test_main_calendar_can_be_identified(self):
         """
-        Tests that the main calendar is identified by a primary key of 1.
+        Tests that the main calendar is identified by `FRONT_PAGE_CALENDAR_PK`.
         """
         pk = settings.FRONT_PAGE_CALENDAR_PK
         self.assertTrue((pk is not None) and (isinstance(pk, int)))
         self.assertTrue(Calendar.objects.get(pk=pk).is_main_calendar())
 
-    def test_that_custom_calendar_includes_exact_data(self):
+    def test_that_calendar_has_owner(self):
         """
-        Tests that the calendar model can be created with user specified values.
+        Tests that the calendar model is owned by a `User` model.
         """
         user = User.objects.create_user(
-            username=faker.user_name(),
-            email=faker.email(),
-            password=faker.password()
+            username=self.fake.user_name(),
+            email=self.fake.email(),
+            password=self.fake.password()
         )
         calendar = Calendar.objects.create(
-            owner=user
-            title='Personal Events',
-            description='Daily reminders'
+            owner=user,
+            title=self.fake.text(max_nb_chars=64),
+            description=self.fake.text(max_nb_chars=140)
         )
-        title, descr = calendar.title, calendar.description
-        self.assertTrue(
-            (isinstance(title, str)) and (title == 'Personal Events'))
-        self.assertTrue(
-            (isinstance(descr, str)) and (descr == 'Daily reminders'))
+        # The `User` we created should be the owner of calendar.
+        self.assertTrue(calendar.is_creator(user))
 
-    def test_calendar_can_retrieve_events(self):
+    def test_calendar_retrieves_events(self):
         """
-        Tests that the calendar model can retrieve all events.
+        Tests that the calendar model can retrieve all events instances.
         """
         user = User.objects.create_user(
-            username=faker.user_name(),
-            email=faker.email(),
-            password=faker.password()
+            username=self.fake.user_name(),
+            email=self.fake.email(),
+            password=self.fake.password()
         )
         calendar = Calendar.objects.create(
-            owner=user
-            title=faker.text(max_nb_chars=64),
-            description=faker.text(max_nb_chars=140)
+            owner=user,
+            title=self.fake.text(max_nb_chars=64),
+            description=self.fake.text(max_nb_chars=140)
         )
         category = Category.objects.create(
-            title=faker.text(max_nb_chars=128)
+            title=self.fake.text(max_nb_chars=128)
         )
         # Initially, we shouldn't have any created events.
         self.assertEqual(0, len(list(calendar.event_instances())))
@@ -86,28 +86,45 @@ class CalendarTestCase(TestCase):
             calendar=calendar,
             creator=user,
             category=category,
-            title=faker.text(max_nb_chars=255),
-            description=faker.text(),
-            contact_name=faker.name(),
-            contact_email=faker.email(),
-            contact_phone=faker.phone_number()
+            title=self.fake.text(max_nb_chars=255),
+            description=self.fake.text(),
+            contact_name=self.fake.name(),
+            contact_email=self.fake.email(),
+            contact_phone=self.fake.phone_number()
         )
         # `Calendar` now should contain the created event.
         self.assertEqual(1, len(list(calendar.event_instances())))
 
-    def test_calendar_subscribes_to_events(self):
+    def test_calendar_subscribes_and_unsubscribes(self):
         """
-        Tests that the calendar model can subscribe to calendar's events.
+        Tests that the calendar model can subscribe/unsubscribe a calendar.
         """
-        # TODO: Programatically subscribe to a calendar and check events.
-        pass
+        user = User.objects.create_user(
+            username=self.fake.user_name(),
+            email=self.fake.email(),
+            password=self.fake.password()
+        )
+        calendar = Calendar.objects.create(
+            owner=user,
+            title=self.fake.text(max_nb_chars=64),
+            description=self.fake.text(max_nb_chars=140)
+        )
+        main_calendar = Calendar.objects.get(
+            pk=settings.FRONT_PAGE_CALENDAR_PK)
 
-    def test_calendar_deletes_subscribed_events(self):
-        """
-        Tests that the calendar model can delete all subscribed events.
-        """
-        # TODO: Once subscribed to model, call `delete_subscribed_events`.
-        pass
+        # Let's subscribe to UCF's main calendar model.
+        calendar.subscriptions.add(main_calendar)
+        main_calendar.copy_future_events(calendar)
+
+        # Ensure that we've subscribed to one calendar.
+        self.assertEqual(1, len(list(calendar.subscribing_calendars())))
+
+        # Let's unsubscribe from the UCF main calendar.
+        calendar.subscriptions.remove(main_calendar)
+        calendar.delete_subscribed_events(main_calendar)
+
+        # Now, we should no longer have a subscription.
+        self.assertEqual(0, len(list(calendar.subscribing_calendars())))
 
 
 class EventTestCase(TestCase):
@@ -125,5 +142,5 @@ class EventTestCase(TestCase):
             event_updates=['state', 'canceled'],
             event_details=['title', 'description'],
             event_contact=['contact_name', 'contact_email', 'contact_phone'])
-        for k, v in attributes.items():
-            self.assertTrue(all(hasattr(Event, i) for i in v))
+        for group, attribute in attributes.items():
+            self.assertTrue(all(hasattr(Event, attr) for attr in attribute))
