@@ -16,6 +16,30 @@ from events.models import Event
 from faker import Factory
 
 
+class ModelFactory(object):
+
+    """Model Factory."""
+
+    @staticmethod
+    def factory(model):
+        fake = Factory.create()
+
+        if model == 'User':
+            return User.objects.create_user(
+                username=fake.user_name(),
+                email=fake.email(),
+                password=fake.password()
+            )
+        assert 0, 'Erroneous model: {0}'.format(model)
+
+
+def generate(kind, how_many):
+    models = []
+    for i in range(how_many):
+        models.append(ModelFactory.factory(kind))
+    return models
+
+
 def test_calendar_subclasses_time_created_modified():
     """
     Test that Calendar model is a subclass of `TimeCreatedModified`.
@@ -48,18 +72,17 @@ def test_calendar_has_an_owner():
     """
     fake = Factory.create()
 
-    user = User.objects.create_user(
-        username=fake.user_name(),
-        email=fake.email(),
-        password=fake.password()
-    )
+    users = generate('User', 2)
     calendar = Calendar.objects.create(
-        owner=user,
+        owner=users[0],
         title=fake.text(max_nb_chars=64),
         description=fake.text(max_nb_chars=140)
     )
-    # Is `user` an owner of Calendar? This should be `True`.
-    is_(calendar.is_creator(user), msg=None)
+    # Is the user an owner of Calendar? This should be `True`.
+    is_(calendar.is_creator(users[0]), msg=None)
+
+    # What if given an arbitrary user? This should be `False`.
+    is_(calendar.is_creator(users[1]) == False, msg=None)
 
 
 def test_calendar_retrieves_event_instances():
