@@ -75,8 +75,11 @@ INSTALLED_APPS = (
     'events',
     'unlevents',
     'widget_tweaks',
-    'django_bleach'
+    'django_bleach',
+    'django_nose'
 )
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 
 LOGGING = {
