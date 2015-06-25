@@ -120,3 +120,4 @@ class TestEventModels(TestCase):
 
         # Now, Knightsec shouldn't have any more subscriptions.
         is_(len(list(self.calendar.subscribing_calendars)) == 0, msg=None)
+        personal_calendar.delete()
