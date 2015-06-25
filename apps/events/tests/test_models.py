@@ -105,8 +105,6 @@ class TestEventModels(TestCase):
             owner=self.user,
             description='Crash dummy'
         )
-        instance_of_event = EventInstanceFactory(event=self.event)
-
         # Let's subscribe to Knightsec's calendar model.
         personal_calendar.subscriptions.add(self.calendar)
         self.calendar.copy_future_events(personal_calendar)
