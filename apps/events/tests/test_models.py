@@ -14,6 +14,8 @@ from .factories import EventInstanceFactory
 
 class TestEventModels(TestCase):
 
+    """Test Event Models."""
+
     def setUp(self):
         """
         Create initial model objects.
@@ -67,7 +69,7 @@ class TestEventModels(TestCase):
 
     def test_calendar_has_an_owner(self):
         """
-        Test that Calendar model can be owned by a `User` model.
+        Test that Calendar model can be owned by a ``User`` model.
         """
         # Is the user an owner of Calendar? This should be ``True``.
         is_(self.calendar.owner is not None, msg=None)
