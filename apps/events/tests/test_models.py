@@ -87,14 +87,15 @@ class TestEventModels(TestCase):
         Test that Calendar model can retrieve all event instances.
         """
         # Event instances should initially be empty.
-        is_(len(list(self.calendar.event_instances)) == 0, msg=None)
+        is_(self.calendar.event_instances.count() == 0, msg=None)
 
         # Check that Calendar now contains the event.
-        is_(len(list(self.calendar.events.all())) != [], msg=None)
+        is_(self.calendar.events.filter(
+            title__exact='Pick All the Locks').count() == 1, msg=None)
 
         instance_of_event = EventInstanceFactory(event=self.event)
         # Event instances should now be equal to one.
-        is_(len(list(self.calendar.event_instances)) == 1, msg=None)
+        is_(self.calendar.event_instances.count() == 1, msg=None)
 
     def test_calendar_subscribes_to_events(self):
         """
@@ -110,12 +111,12 @@ class TestEventModels(TestCase):
         self.calendar.copy_future_events(personal_calendar)
 
         # Have we subscribed to Knightsec? This should be ``True``.
-        is_(len(list(self.calendar.subscribing_calendars)) == 1, msg=None)
+        is_(self.calendar.subscribing_calendars.count() == 1, msg=None)
 
         # What about unsubscribing? Knightsec won't be too happy.
         personal_calendar.subscriptions.remove(self.calendar)
         personal_calendar.delete_subscribed_events(self.calendar)
 
         # Now, Knightsec shouldn't have any more subscriptions.
-        is_(len(list(self.calendar.subscribing_calendars)) == 0, msg=None)
+        is_(self.calendar.subscribing_calendars.count() == 0, msg=None)
         personal_calendar.delete()
