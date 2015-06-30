@@ -10,10 +10,39 @@ from events.models import EventInstance
 from factory import DjangoModelFactory
 from factory import SubFactory
 
+from datetime import datetime
+from datetime import timedelta
+
+
 faker = Factory.create('en_US')
 
 
+def today():
+    """
+    Get a datetime object of today's date.
+
+    Returns:
+      obj <datetime.datetime>: The datetime object.
+    """
+    return datetime.now()
+
+
+def days_from_today(days=7):
+    """
+    Get a datetime object of N days from today's date.
+
+    Args:
+      days (Optional[int]): The number of days from today.
+
+    Returns:
+      obj <datetime.datetime>: The datetime object.
+    """
+    return today() + timedelta(days=days)
+
+
 class UserFactory(DjangoModelFactory):
+
+    """User Factory."""
 
     class Meta:
         model = User
@@ -25,6 +54,8 @@ class UserFactory(DjangoModelFactory):
 
 class CategoryFactory(DjangoModelFactory):
 
+    """Category Factory."""
+
     class Meta:
         model = Category
 
@@ -32,6 +63,8 @@ class CategoryFactory(DjangoModelFactory):
 
 
 class CalendarFactory(DjangoModelFactory):
+
+    """Calendar Factory."""
 
     class Meta:
         model = Calendar
@@ -41,6 +74,8 @@ class CalendarFactory(DjangoModelFactory):
 
 
 class EventFactory(DjangoModelFactory):
+
+    """Event Factory."""
 
     class Meta:
         model = Event
@@ -60,9 +95,13 @@ class EventFactory(DjangoModelFactory):
 
 class EventInstanceFactory(DjangoModelFactory):
 
+    """Event Instance Factory."""
+
     class Meta:
         model = EventInstance
 
     event = SubFactory(EventFactory)
-    start = str(faker.date_time_this_month(before_now=False, after_now=True))
-    end = str(faker.date_time_this_month(before_now=False, after_now=True))
+    start = str(faker.date_time_between_dates(datetime_start=today()))
+    end = str(
+        faker.date_time_between_dates(datetime_start=days_from_today(days=1),
+                                      datetime_end=days_from_today(days=3)))
