@@ -4,11 +4,16 @@ from nose.tools import raises
 from django.test import TestCase
 
 from events.models import Calendar
+from events.models import Event
 
 from events.forms.manager import CalendarForm
+from events.forms.manager import EventForm
 
 from .factories import UserFactory
+from .factories import CategoryFactory
 from .factories import CalendarFactory
+from .factories import EventFactory
+
 
 from random import randint
 
@@ -43,7 +48,7 @@ class TestCalendarForm(TestCase):
         self.main_calendar.delete()
         self.user_calendar.delete()
 
-    def test_form_creation_without_data(self):
+    def test_calendar_form_init(self):
         """
         Test that Calendar form can be successfully created.
         """
@@ -51,14 +56,14 @@ class TestCalendarForm(TestCase):
         is_(isinstance(form.instance, Calendar), msg=None)
         is_(form.instance.pk == self.main_calendar.pk, msg=None)
 
-    def test_main_calendar_form_on_cleanse(self):
+    def test_calendar_form_cleans_title(self):
         """
         Test that Main Calendar form title can't be modified.
         """
         text = 'asdf' * 10
         form = CalendarForm(data={'title': text}, instance=self.main_calendar)
 
-        is_(form.is_valid() == True, msg=None)
+        is_(form.is_valid(), msg=None)
 
         # This form shouldn't change from what was assigned original.
         # Why? It assumes the first calendar is the primary calendar.
@@ -71,7 +76,7 @@ class TestCalendarForm(TestCase):
         """
         ugly = '{:^30}'.format(self.user_calendar.title)
         form = CalendarForm(
-            {'title': ugly},
+            data={'title': ugly},
             instance=self.user_calendar)
 
         calendar = form.save()
@@ -87,9 +92,60 @@ class TestCalendarForm(TestCase):
         Test that Calendar form raises on titles > 64 characters.
         """
         def flavor_text(n=100):
-            return ''.join([chr(randint(65, 122)) for i in xrange(0, n)])
+            return ''.join([chr(randint(65, 122)) for _ in xrange(0, n)])
 
         form = CalendarForm(
-            {'title': flavor_text(n=65)},
+            data={'title': flavor_text(n=65)},
             instance=self.user_calendar)
+
+        is_(form.is_valid() == False, msg=None)
+        is_(form.errors['title'][0] == 'Ensure this value has at most 64 '
+            'characters (it has 65).', msg=None)
         form.save()
+
+
+class TestEventForm(TestCase):
+
+    """Test Event Form."""
+
+    def setUp(self):
+        """
+        Create initial model objects.
+        """
+        self.user = UserFactory(
+            username='eileenblake7jB',
+            password='Slipnot1',
+            email='eileenblakeYpv@crazespaces.pw'
+        )
+        self.user_calendar = CalendarFactory(
+            title='Morrissey Concert'
+        )
+        self.user_category = CategoryFactory(
+            title='Music Concert'
+        )
+        self.user_event = EventFactory(
+            calendar=self.user_calendar,
+            creator=self.user,
+            title='Morrissey Live @ UCF Stadium',
+            description='Free with valid UCF ID',
+            contact_name='Clara Cooper',
+            contact_email='claracooperw6v@crazespaces.pw',
+            contact_phone='(760) 624-6512',
+            category=self.user_category
+        )
+
+    def tearDown(self):
+        """
+        Delete model objects.
+        """
+        self.user.delete()
+        self.user_category.delete()
+        self.user_calendar.delete()
+
+        self.user_event.delete()
+
+    def test_event_init(self):
+        """
+        TODO: figure out how initialize ``EventForm``.
+        """
+        pass
