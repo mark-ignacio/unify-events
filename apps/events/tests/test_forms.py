@@ -27,11 +27,12 @@ class TestCalendarForm(TestCase):
             email='garettdotsonMeZ@crazespaces.pw'
         )
         self.main_calendar = CalendarFactory(
-            title='DC407 Events'
+            title='Events at UCF'
         )
         self.user_calendar = CalendarFactory(
-            title='DC4420 Events',
-            owner=self.user
+            title='DC407 Events',
+            owner=self.user,
+            description='Security talks'
         )
 
     def tearDown(self):
@@ -55,33 +56,40 @@ class TestCalendarForm(TestCase):
         Test that Main Calendar form title can't be modified.
         """
         text = 'asdf' * 10
-        form = CalendarForm({'title': text}, instance=self.main_calendar)
+        form = CalendarForm(data={'title': text}, instance=self.main_calendar)
 
-        is_(form.is_valid(), msg=None)
+        is_(form.is_valid() == True, msg=None)
 
         # This form shouldn't change from what was assigned original.
+        # Why? It assumes the first calendar is the primary calendar.
+        is_(form.clean_title() != text, msg=None)
         is_(form.clean_title() == self.main_calendar.title, msg=None)
 
     def test_user_calendars_on_save(self):
         """
         Test that Calendar form title cleans all instances of whitespace.
         """
-        ugly = '{:^30}'.format(self.user_calendar)
+        ugly = '{:^30}'.format(self.user_calendar.title)
         form = CalendarForm(
             {'title': ugly},
-            instance=self.user_calendar).save()
+            instance=self.user_calendar)
 
-        # On save, all whitespaces should be cleansed.
-        is_(any(word != '' for word in form.title.split(' ')), msg=None)
-        is_(form.title == self.user_calendar.title, msg=None)
+        calendar = form.save()
+
+        # On save, all instances of whitespace should be cleansed.
+        spaces = [i for i in calendar.title.split(' ') if i == '']
+        is_(len(spaces) == 0, msg=None)
+        is_(calendar.title == self.user_calendar.title, msg=None)
 
     @raises(ValueError)
     def test_user_calendar_form_with_erroneous_title(self):
-        """Test that Calendar form raises on titles > 64 characters."""
-        def random_title(n=100):
+        """
+        Test that Calendar form raises on titles > 64 characters.
+        """
+        def flavor_text(n=100):
             return ''.join([chr(randint(65, 122)) for i in xrange(0, n)])
 
         form = CalendarForm(
-            {'title': random_title(n=65)},
+            {'title': flavor_text(n=65)},
             instance=self.user_calendar)
         form.save()
