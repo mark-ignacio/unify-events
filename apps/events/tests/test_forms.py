@@ -154,7 +154,6 @@ class TestEventForm(TestCase):
         self.user.delete()
         self.user_category.delete()
         self.user_calendar.delete()
-
         self.user_event.delete()
 
     def test_event_on_init(self):
@@ -176,11 +175,9 @@ class TestEventForm(TestCase):
         )
 
         ok_(form.is_valid(), msg=None)
-
         choices = [i for i in form.fields['calendar'].choices]
 
         ok_(choices == [(1, u'Morrissey Concert')], msg=None)
-
         ok_(form.has_changed(), msg=None)
 
     def test_event_form_on_clean_with_naughty_tags(self):
@@ -202,7 +199,7 @@ class TestEventForm(TestCase):
             instance=self.user_event
         )
 
-        form.save()
+        ok_(form.is_valid(), msg=None)
 
         # All instances of ``tags`` should now be "cleansed".
         ok_(all(i == u'' for i in form.clean()['tags']), msg=None)

@@ -56,7 +56,6 @@ class TestEventModels(TestCase):
         self.user.delete()
         self.calendar.delete()
         self.category.delete()
-
         self.event.delete()
 
     def test_calendar_responds_to_fields(self):
@@ -103,7 +102,10 @@ class TestEventModels(TestCase):
         ok_(self.calendar.events.filter(
             title__exact='Pick All the Locks').count() == 1, msg=None)
 
-        instance_of_event = EventInstanceFactory(event=self.event)
+        instance_of_event = EventInstanceFactory(
+            event=self.event,
+            location=self.location
+        )
 
         # Event instances should now be equal to one.
         ok_(self.calendar.event_instances.count() == 1, msg=None)
@@ -127,7 +129,7 @@ class TestEventModels(TestCase):
         Test that Location model can retrieve a UCF map widget URL.
         """
         widget_url = self.location.get_map_widget_url
-        ok_(widget_url != False, msg=None)
+        ok_(widget_url, msg=None)
         match = grep(r'//map.ucf.edu/(?P<path>.*)$', widget_url)
         ok_(match is not None, msg=None)
 
