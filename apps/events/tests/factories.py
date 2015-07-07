@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 from events.models import Calendar
 from events.models import Category
+from events.models import Location
 from events.models import Event
 from events.models import EventInstance
 
@@ -22,20 +23,20 @@ def today():
     Get a datetime object of today's date.
 
     Returns:
-      obj <datetime.datetime>: The datetime object.
+      obj <datetime>: The datetime object.
     """
     return datetime.now()
 
 
 def days_from_today(days=7):
     """
-    Get a datetime object of N days from today's date.
+    Get a datetime object N days from today.
 
     Args:
-      days (Optional[int]): The number of days from today.
+      days (Optional[int]): Days from today.
 
     Returns:
-      obj <datetime.datetime>: The datetime object.
+      obj <datetime>: The datetime object.
     """
     return today() + timedelta(days=days)
 
@@ -73,6 +74,18 @@ class CalendarFactory(DjangoModelFactory):
     owner = SubFactory(UserFactory)
 
 
+class LocationFactory(DjangoModelFactory):
+
+    """Location Factory."""
+
+    class Meta:
+        model = Location
+
+    title = faker.text(max_nb_chars=255)
+    url = faker.url()
+    room = faker.building_number()
+
+
 class EventFactory(DjangoModelFactory):
 
     """Event Factory."""
@@ -101,7 +114,7 @@ class EventInstanceFactory(DjangoModelFactory):
         model = EventInstance
 
     event = SubFactory(EventFactory)
+    location = SubFactory(LocationFactory)
     start = str(faker.date_time_between_dates(datetime_start=today()))
-    end = str(
-        faker.date_time_between_dates(datetime_start=days_from_today(days=1),
-                                      datetime_end=days_from_today(days=3)))
+    end   = str(faker.date_time_between_dates(datetime_start=days_from_today(days=1),
+                                              datetime_end=days_from_today(days=3)))

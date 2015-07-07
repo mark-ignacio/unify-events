@@ -1,4 +1,4 @@
-from nose.tools import ok_ as is_
+from nose.tools import ok_
 from nose.tools import raises
 
 from django.test import TestCase
@@ -7,6 +7,7 @@ from events.models import Calendar
 from events.models import Event
 
 from events.forms.manager import CalendarForm
+from events.forms.manager import CategoryForm
 from events.forms.manager import EventForm
 
 from .factories import UserFactory
@@ -53,22 +54,33 @@ class TestCalendarForm(TestCase):
         Test that Calendar form can be successfully created.
         """
         form = CalendarForm(instance=self.main_calendar)
-        is_(isinstance(form.instance, Calendar), msg=None)
-        is_(form.instance.pk == self.main_calendar.pk, msg=None)
+        ok_(isinstance(form.instance, Calendar), msg=None)
+        ok_(form.instance.pk == self.main_calendar.pk, msg=None)
 
-    def test_calendar_form_cleans_title(self):
+    def test_main_calendar_form_is_readonly(self):
         """
         Test that Main Calendar form title can't be modified.
         """
-        text = 'asdf' * 10
-        form = CalendarForm(data={'title': text}, instance=self.main_calendar)
+        data = {'title': 'asdf' * 10}
+        form = CalendarForm(data=data, instance=self.main_calendar)
 
-        is_(form.is_valid(), msg=None)
+        ok_(form.is_valid(), msg=None)
 
-        # This form shouldn't change from what was assigned original.
+        # This form shouldn't change from what was created [line 35].
         # Why? It assumes the first calendar is the primary calendar.
-        is_(form.clean_title() != text, msg=None)
-        is_(form.clean_title() == self.main_calendar.title, msg=None)
+        ok_(form.clean_title() == self.main_calendar.title, msg=None)
+
+    def test_calendar_form_can_also_be_mutable(self):
+        """
+        Test that User Calendar form title can be modified.
+        """
+        data = {'title': 'DC4420 Events'}
+        form = CalendarForm(data=data, instance=self.user_calendar)
+
+        ok_(form.is_valid(), msg=None)
+
+        # We've edited a form who's instance isn't the Main Calendar.
+        ok_(form.clean_title() == u'DC4420 Events', msg=None)
 
     def test_user_calendars_on_save(self):
         """
@@ -83,8 +95,8 @@ class TestCalendarForm(TestCase):
 
         # On save, all instances of whitespace should be cleansed.
         spaces = [i for i in calendar.title.split(' ') if i == '']
-        is_(len(spaces) == 0, msg=None)
-        is_(calendar.title == self.user_calendar.title, msg=None)
+        ok_(len(spaces) == 0, msg=None)
+        ok_(calendar.title == self.user_calendar.title, msg=None)
 
     @raises(ValueError)
     def test_user_calendar_form_with_erroneous_title(self):
@@ -98,8 +110,8 @@ class TestCalendarForm(TestCase):
             data={'title': flavor_text(n=65)},
             instance=self.user_calendar)
 
-        is_(form.is_valid() == False, msg=None)
-        is_(form.errors['title'][0] == 'Ensure this value has at most 64 '
+        ok_(form.is_valid() == False, msg=None)
+        ok_(form.errors['title'][0] == 'Ensure this value has at most 64 '
             'characters (it has 65).', msg=None)
         form.save()
 
@@ -118,7 +130,8 @@ class TestEventForm(TestCase):
             email='eileenblakeYpv@crazespaces.pw'
         )
         self.user_calendar = CalendarFactory(
-            title='Morrissey Concert'
+            title='Morrissey Concert',
+            owner=self.user
         )
         self.user_category = CategoryFactory(
             title='Music Concert'
@@ -144,8 +157,52 @@ class TestEventForm(TestCase):
 
         self.user_event.delete()
 
-    def test_event_init(self):
+    def test_event_on_init(self):
         """
-        TODO: figure out how initialize ``EventForm``.
+        Test that Event form can successfully be created.
         """
-        pass
+        form = EventForm(
+            initial={'user_calendars': self.user.calendars},
+            data={
+                'title': self.user_event.title,
+                'description': self.user_event.description,
+                'state': self.user_event.state,
+                'contact_email': self.user_event.contact_email,
+                'calendar': self.user_event.calendar.pk,
+                'contact_name': self.user_event.contact_name,
+                'category': self.user_event.category.pk,
+                'tags': ['Indie', 'UK']},
+            instance=self.user_event
+        )
+
+        ok_(form.is_valid(), msg=None)
+
+        choices = [i for i in form.fields['calendar'].choices]
+
+        ok_(choices == [(1, u'Morrissey Concert')], msg=None)
+
+        ok_(form.has_changed(), msg=None)
+
+    def test_event_form_on_clean_with_naughty_tags(self):
+        """
+        Test that tags get properly cleaned.
+        """
+        tinker_tags = ['^@', '[]', '\'', '&quot;', '"', '`']
+        form = EventForm(
+            initial={'user_calendars': self.user.calendars},
+            data={
+                'title': self.user_event.title,
+                'description': self.user_event.description,
+                'state': self.user_event.state,
+                'contact_email': self.user_event.contact_email,
+                'calendar': self.user_event.calendar.pk,
+                'contact_name': self.user_event.contact_name,
+                'category': self.user_event.category.pk,
+                'tags': tinker_tags},
+            instance=self.user_event
+        )
+
+        form.save()
+
+        # All instances of ``tags`` should now be "cleansed".
+        ok_(all(i == u'' for i in form.clean()['tags']), msg=None)
