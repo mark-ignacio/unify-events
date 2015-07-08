@@ -15,7 +15,6 @@ from .factories import CategoryFactory
 from .factories import CalendarFactory
 from .factories import EventFactory
 
-
 from random import randint
 
 
@@ -25,7 +24,7 @@ class TestCalendarForm(TestCase):
 
     def setUp(self):
         """
-        Create initial model objects.
+        Create Calendar model object(s).
         """
         self.user = UserFactory(
             username='garettdotson8CU',
@@ -43,7 +42,7 @@ class TestCalendarForm(TestCase):
 
     def tearDown(self):
         """
-        Delete model objects.
+        Delete Calendar model object(s).
         """
         self.user.delete()
         self.main_calendar.delete()
@@ -51,7 +50,7 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_init(self):
         """
-        Test that Calendar form can be successfully created.
+        Test that Calendar form can be created successfully.
         """
         form = CalendarForm(instance=self.main_calendar)
         ok_(isinstance(form.instance, Calendar), msg=None)
@@ -72,19 +71,20 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_can_also_be_mutable(self):
         """
-        Test that User Calendar form title can be modified.
+        Test that user Calendar form title can be updated.
         """
         data = {'title': 'DC4420 Events'}
         form = CalendarForm(data=data, instance=self.user_calendar)
 
         ok_(form.is_valid(), msg=None)
 
-        # We've edited a form who's instance isn't the Main Calendar.
+        # We've edited a form instance which isn't the Main Calendar.
+        # This means I should get back
         ok_(form.clean_title() == u'DC4420 Events', msg=None)
 
     def test_user_calendars_on_save(self):
         """
-        Test that Calendar form title cleans all instances of whitespace.
+        Test that Calendar form title removes whitespace on save.
         """
         ugly = '{:^30}'.format(self.user_calendar.title)
         form = CalendarForm(
@@ -108,11 +108,23 @@ class TestCalendarForm(TestCase):
 
         form = CalendarForm(
             data={'title': flavor_text(n=65)},
-            instance=self.user_calendar)
+            instance=self.user_calendar
+        )
 
         ok_(form.is_valid() == False, msg=None)
-        ok_(form.errors['title'][0] == 'Ensure this value has at most 64 '
+        ok_(form.errors['title'][0] == u'Ensure this value has at most 64 '
             'characters (it has 65).', msg=None)
+        form.save()
+
+    @raises(ValueError)
+    def test_user_calendar_form_with_blank_fields(self):
+        """
+        Test that Calendar form raises on an empty title field.
+        """
+        form = CalendarForm(data={'title': ''}, instance=self.user_calendar)
+
+        ok_(form.is_valid() == False, msg=None)
+        ok_(form.errors['title'][0] == u'This field is required.' , msg=None)
         form.save()
 
 
@@ -122,7 +134,7 @@ class TestEventForm(TestCase):
 
     def setUp(self):
         """
-        Create initial model objects.
+        Create initial Event model object(s).
         """
         self.user = UserFactory(
             username='eileenblake7jB',
@@ -149,7 +161,7 @@ class TestEventForm(TestCase):
 
     def tearDown(self):
         """
-        Delete model objects.
+        Delete model Event model object(s).
         """
         self.user.delete()
         self.user_category.delete()
@@ -169,22 +181,20 @@ class TestEventForm(TestCase):
                 'contact_email': self.user_event.contact_email,
                 'calendar': self.user_event.calendar.pk,
                 'contact_name': self.user_event.contact_name,
+                'contact_phone': self.user_event.contact_phone,
                 'category': self.user_event.category.pk,
-                'tags': ['Indie', 'UK']},
+                'tags': ['Indie', 'Shoegaze']},
             instance=self.user_event
         )
 
         ok_(form.is_valid(), msg=None)
         choices = [i for i in form.fields['calendar'].choices]
-
         ok_(choices == [(1, u'Morrissey Concert')], msg=None)
-        ok_(form.has_changed(), msg=None)
 
     def test_event_form_on_clean_with_naughty_tags(self):
         """
-        Test that tags get properly cleaned.
+        Test that Calendar form removes invalid tags.
         """
-        tinker_tags = ['^@', '[]', '\'', '&quot;', '"', '`']
         form = EventForm(
             initial={'user_calendars': self.user.calendars},
             data={
@@ -194,12 +204,13 @@ class TestEventForm(TestCase):
                 'contact_email': self.user_event.contact_email,
                 'calendar': self.user_event.calendar.pk,
                 'contact_name': self.user_event.contact_name,
+                'contact_phone': self.user_event.contact_phone,
                 'category': self.user_event.category.pk,
-                'tags': tinker_tags},
+                'tags': ['^@', '[]', '\'', '`', '&quot;', '"']},
             instance=self.user_event
         )
 
         ok_(form.is_valid(), msg=None)
 
-        # All instances of ``tags`` should now be "cleansed".
+        # All instances of ``tags`` should now be cleansed.
         ok_(all(i == u'' for i in form.clean()['tags']), msg=None)
