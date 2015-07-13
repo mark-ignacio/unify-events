@@ -21,17 +21,10 @@ class TestLocationModel(TestCase):
 
     def setUp(self):
         """
-        Create Location model object(s).
+        Build Location model object(s).
         """
-        self.location_1 = LocationFactory(title='ENG2', room='301')
-        self.location_2 = LocationFactory(title='CHEM', room=None)
-
-    def tearDown(self):
-        """
-        Delete Location model object(s).
-        """
-        self.location_1.delete()
-        self.location_2.delete()
+        self.location_1 = LocationFactory.build(title='ENG2', room='301')
+        self.location_2 = LocationFactory.build(title='CHEM', room=None)
 
     def test_location_combines_title_with_room(self):
         """
@@ -66,22 +59,19 @@ class TestCalendarModel(TestCase):
         self.user = UserFactory(
             username='dylonmackrvr',
             password='qwerty',
-            email='dylonmackAg3@crazespaces.pw'
-        )
+            email='dylonmackAg3@crazespaces.pw')
         self.main_calendar = CalendarFactory(title='Events at UCF')
         self.user_calendar = CalendarFactory(
             title='Knightsec Events',
             owner=self.user,
-            description='CTFs'
-        )
+            description='CTFs')
         self.category = CategoryFactory(title='Meeting')
         self.user_event = EventFactory(
             calendar=self.user_calendar,
             creator=self.user,
             title='Pick All the Locks',
             description='"Who just leveled up?!"',
-            category=self.category
-        )
+            category=self.category)
 
     def tearDown(self):
         """
@@ -114,13 +104,13 @@ class TestCalendarModel(TestCase):
         random_user = UserFactory(
             username='404_everywhere',
             password='r3@lSecure',
-            email='rodneyrowe@crazespaces.pw'
-        )
+            email='rodneyrowe@crazespaces.pw')
         ok_(self.user_calendar.is_creator(random_user) == False, msg=None)
         random_user.delete()
 
     def test_calendar_retrieves_all_event_instances(self):
         """
+        Test that Calendar can accrue event instance(s).
         """
         # Event instances should initially be empty.
         ok_(self.user_calendar.event_instances.count() == 0, msg=None)

@@ -29,16 +29,12 @@ class TestCalendarForm(TestCase):
         self.user = UserFactory(
             username='garettdotson8CU',
             password='Pa55w0rd',
-            email='garettdotsonMeZ@crazespaces.pw'
-        )
-        self.main_calendar = CalendarFactory(
-            title='Events at UCF'
-        )
+            email='garettdotsonMeZ@crazespaces.pw')
+        self.main_calendar = CalendarFactory(title='Events at UCF')
         self.user_calendar = CalendarFactory(
             title='DC407 Events',
             owner=self.user,
-            description='Security talks'
-        )
+            description='Security talks')
 
     def tearDown(self):
         """
@@ -50,7 +46,7 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_init(self):
         """
-        Test that Calendar form can be created successfully.
+        Test that Calendar form can be successfully created.
         """
         form = CalendarForm(instance=self.main_calendar)
         ok_(isinstance(form.instance, Calendar), msg=None)
@@ -71,7 +67,7 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_can_also_be_mutable(self):
         """
-        Test that user Calendar form title can be updated.
+        Test that a user Calendar form title can be updated.
         """
         data = {'title': 'DC4420 Events'}
         form = CalendarForm(data=data, instance=self.user_calendar)
@@ -79,7 +75,7 @@ class TestCalendarForm(TestCase):
         ok_(form.is_valid(), msg=None)
 
         # We've edited a form instance which isn't the Main Calendar.
-        # This means I should get back
+        # In this case, we should get back an updated calendar title.
         ok_(form.clean_title() == u'DC4420 Events', msg=None)
 
     def test_user_calendars_on_save(self):
@@ -108,8 +104,7 @@ class TestCalendarForm(TestCase):
 
         form = CalendarForm(
             data={'title': flavor_text(n=65)},
-            instance=self.user_calendar
-        )
+            instance=self.user_calendar)
 
         ok_(form.is_valid() == False, msg=None)
         ok_(form.errors['title'][0] == u'Ensure this value has at most 64 '
@@ -119,12 +114,12 @@ class TestCalendarForm(TestCase):
     @raises(ValueError)
     def test_user_calendar_form_with_blank_fields(self):
         """
-        Test that Calendar form raises on an empty title field.
+        Test that Calendar form raises on a "blank" title field.
         """
         form = CalendarForm(data={'title': ''}, instance=self.user_calendar)
 
         ok_(form.is_valid() == False, msg=None)
-        ok_(form.errors['title'][0] == u'This field is required.' , msg=None)
+        ok_(form.errors['title'][0] == u'This field is required.', msg=None)
         form.save()
 
 
@@ -139,15 +134,11 @@ class TestEventForm(TestCase):
         self.user = UserFactory(
             username='eileenblake7jB',
             password='Slipnot1',
-            email='eileenblakeYpv@crazespaces.pw'
-        )
+            email='eileenblakeYpv@crazespaces.pw')
         self.user_calendar = CalendarFactory(
             title='Morrissey Concert',
-            owner=self.user
-        )
-        self.user_category = CategoryFactory(
-            title='Music Concert'
-        )
+            owner=self.user)
+        self.user_category = CategoryFactory(title='Music Concert')
         self.user_event = EventFactory(
             calendar=self.user_calendar,
             creator=self.user,
@@ -156,8 +147,7 @@ class TestEventForm(TestCase):
             contact_name='Clara Cooper',
             contact_email='claracooperw6v@crazespaces.pw',
             contact_phone='(760) 624-6512',
-            category=self.user_category
-        )
+            category=self.user_category)
 
     def tearDown(self):
         """
@@ -170,7 +160,7 @@ class TestEventForm(TestCase):
 
     def test_event_on_init(self):
         """
-        Test that Event form can successfully be created.
+        Test that Event form can be successfully created.
         """
         form = EventForm(
             initial={'user_calendars': self.user.calendars},
@@ -184,8 +174,7 @@ class TestEventForm(TestCase):
                 'contact_phone': self.user_event.contact_phone,
                 'category': self.user_event.category.pk,
                 'tags': ['Indie', 'Shoegaze']},
-            instance=self.user_event
-        )
+            instance=self.user_event)
 
         ok_(form.is_valid(), msg=None)
         choices = [i for i in form.fields['calendar'].choices]
@@ -207,8 +196,7 @@ class TestEventForm(TestCase):
                 'contact_phone': self.user_event.contact_phone,
                 'category': self.user_event.category.pk,
                 'tags': ['^@', '[]', '\'', '`', '&quot;', '"']},
-            instance=self.user_event
-        )
+            instance=self.user_event)
 
         ok_(form.is_valid(), msg=None)
 

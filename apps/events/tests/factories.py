@@ -15,7 +15,7 @@ from datetime import datetime
 from datetime import timedelta
 
 
-faker = Factory.create('en_US')
+fake = Factory.create('en_US')
 
 
 def today():
@@ -48,9 +48,9 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
 
-    username = faker.user_name()
-    password = faker.password()
-    email = faker.email()
+    username = fake.user_name()
+    password = fake.password()
+    email = fake.email()
 
 
 class CategoryFactory(DjangoModelFactory):
@@ -60,7 +60,7 @@ class CategoryFactory(DjangoModelFactory):
     class Meta:
         model = Category
 
-    title = faker.text(max_nb_chars=128)
+    title = fake.text(max_nb_chars=128)
 
 
 class CalendarFactory(DjangoModelFactory):
@@ -70,7 +70,7 @@ class CalendarFactory(DjangoModelFactory):
     class Meta:
         model = Calendar
 
-    title = faker.text(max_nb_chars=64)
+    title = fake.text(max_nb_chars=64)
     owner = SubFactory(UserFactory)
 
 
@@ -81,9 +81,9 @@ class LocationFactory(DjangoModelFactory):
     class Meta:
         model = Location
 
-    title = faker.text(max_nb_chars=255)
-    url = faker.url()
-    room = faker.building_number()
+    title = fake.text(max_nb_chars=255)
+    url = fake.url()
+    room = fake.building_number()
 
 
 class EventFactory(DjangoModelFactory):
@@ -96,12 +96,12 @@ class EventFactory(DjangoModelFactory):
     calendar = SubFactory(CalendarFactory)
     creator = SubFactory(UserFactory)
 
-    title = faker.text(max_nb_chars=255)
-    description = faker.text()
+    title = fake.text(max_nb_chars=255)
+    description = fake.text()
 
-    contact_name = faker.name()
-    contact_email = faker.email()
-    contact_phone = faker.phone_number()
+    contact_name = fake.name()
+    contact_email = fake.email()
+    contact_phone = fake.phone_number()
 
     category = SubFactory(CategoryFactory)
 
@@ -115,6 +115,7 @@ class EventInstanceFactory(DjangoModelFactory):
 
     event = SubFactory(EventFactory)
     location = SubFactory(LocationFactory)
-    start = str(faker.date_time_between_dates(datetime_start=today()))
-    end   = str(faker.date_time_between_dates(datetime_start=days_from_today(days=1),
-                                              datetime_end=days_from_today(days=3)))
+    start = str(fake.date_time_between_dates(datetime_start=today()))
+    end = str(fake.date_time_between_dates(
+              datetime_start=days_from_today(days=1),
+              datetime_end=days_from_today(days=3)))
