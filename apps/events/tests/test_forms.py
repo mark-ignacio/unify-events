@@ -30,7 +30,7 @@ class TestCalendarForm(TestCase):
             username='garettdotson8CU',
             password='Pa55w0rd',
             email='garettdotsonMeZ@crazespaces.pw')
-        self.main_calendar = CalendarFactory(title='Events at UCF')
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
         self.user_calendar = CalendarFactory(
             title='DC407 Events',
             owner=self.user,

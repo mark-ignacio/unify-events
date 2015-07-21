@@ -22,3 +22,6 @@ Thumbs.db
 
 # SASS
 .sass-cache
+
+# Test
+credentials.json

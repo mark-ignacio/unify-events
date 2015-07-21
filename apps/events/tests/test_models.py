@@ -60,7 +60,7 @@ class TestCalendarModel(TestCase):
             username='dylonmackrvr',
             password='qwerty',
             email='dylonmackAg3@crazespaces.pw')
-        self.main_calendar = CalendarFactory(title='Events at UCF')
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
         self.user_calendar = CalendarFactory(
             title='Knightsec Events',
             owner=self.user,
