@@ -31,6 +31,7 @@ class TestLocationModel(TestCase):
         Test Location creates a comboname with an appended room number.
         """
         title = self.location_2.title
+
         ok_(self.location_1.comboname == 'ENG2: 301', msg=None)
         ok_(self.location_2.comboname == title, msg=None)
 
@@ -41,6 +42,7 @@ class TestLocationModel(TestCase):
         self.location_1.url = 'http://map.ucf.edu/?show=116'
         widget_url = self.location_1.get_map_widget_url
         result = grep(r'//map.ucf.edu/(?P<path>.*)', widget_url)
+
         ok_(result is not None, msg=None)
 
         # It shouldn't return a URL with an invalid UCF permalink.
@@ -100,12 +102,14 @@ class TestCalendarModel(TestCase):
         """
         Test that Calendar cannot be owned by a non-owner of a Calendar.
         """
-        # What if given an arbitrary user? We expect this to be ``False``.
         random_user = UserFactory(
             username='404_everywhere',
             password='r3@lSecure',
             email='rodneyrowe@crazespaces.pw')
+
+        # What if given an arbitrary user? We expect this to be ``False``.
         ok_(self.user_calendar.is_creator(random_user) == False, msg=None)
+
         random_user.delete()
 
     def test_calendar_retrieves_all_event_instances(self):
@@ -114,7 +118,6 @@ class TestCalendarModel(TestCase):
         """
         # Event instances should initially be empty.
         ok_(self.user_calendar.event_instances.count() == 0, msg=None)
-
         # Check that Calendar now contains the event.
         ok_(self.user_calendar.events.filter(
             title__exact='Pick All the Locks').count() == 1, msg=None)
@@ -123,6 +126,7 @@ class TestCalendarModel(TestCase):
 
         # Event instances should now be equal to one.
         ok_(self.user_calendar.event_instances.count() == 1, msg=None)
+
         event_instance.delete()
 
     def test_calendar_subscribes_to_events(self):

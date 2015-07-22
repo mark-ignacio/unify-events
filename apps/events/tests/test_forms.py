@@ -49,6 +49,7 @@ class TestCalendarForm(TestCase):
         Test that Calendar form can be successfully created.
         """
         form = CalendarForm(instance=self.main_calendar)
+
         ok_(isinstance(form.instance, Calendar), msg=None)
         ok_(form.instance.pk == self.main_calendar.pk, msg=None)
 
@@ -61,7 +62,7 @@ class TestCalendarForm(TestCase):
 
         ok_(form.is_valid(), msg=None)
 
-        # This form shouldn't change from what was created [line 35].
+        # This form shouldn't change from what was created [line 33].
         # Why? It assumes the first calendar is the primary calendar.
         ok_(form.clean_title() == self.main_calendar.title, msg=None)
 
@@ -91,6 +92,7 @@ class TestCalendarForm(TestCase):
 
         # On save, all instances of whitespace should be cleansed.
         spaces = [i for i in calendar.title.split(' ') if i == '']
+
         ok_(len(spaces) == 0, msg=None)
         ok_(calendar.title == self.user_calendar.title, msg=None)
 
@@ -109,17 +111,19 @@ class TestCalendarForm(TestCase):
         ok_(form.is_valid() == False, msg=None)
         ok_(form.errors['title'][0] == u'Ensure this value has at most 64 '
             'characters (it has 65).', msg=None)
+
         form.save()
 
     @raises(ValueError)
     def test_user_calendar_form_with_blank_fields(self):
         """
-        Test that Calendar form raises on a "blank" title field.
+        Test that Calendar form raises on a blank title field.
         """
         form = CalendarForm(data={'title': ''}, instance=self.user_calendar)
 
         ok_(form.is_valid() == False, msg=None)
         ok_(form.errors['title'][0] == u'This field is required.', msg=None)
+
         form.save()
 
 
@@ -176,8 +180,9 @@ class TestEventForm(TestCase):
                 'tags': ['Indie', 'Shoegaze']},
             instance=self.user_event)
 
-        ok_(form.is_valid(), msg=None)
         choices = [i for i in form.fields['calendar'].choices]
+
+        ok_(form.is_valid(), msg=None)
         ok_(choices == [(1, u'Morrissey Concert')], msg=None)
 
     def test_event_form_on_clean_with_naughty_tags(self):
@@ -198,7 +203,6 @@ class TestEventForm(TestCase):
                 'tags': ['^@', '[]', '\'', '`', '&quot;', '"']},
             instance=self.user_event)
 
-        ok_(form.is_valid(), msg=None)
-
         # All instances of ``tags`` should now be cleansed.
+        ok_(form.is_valid(), msg=None)
         ok_(all(i == u'' for i in form.clean()['tags']), msg=None)

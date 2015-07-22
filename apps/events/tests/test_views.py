@@ -31,24 +31,22 @@ def login(browser, url, nid, password):
     """
     Login to Unify Events as a targeted user.
 
-    browser (obj): The web browser instance (e.g., "FireFox").
+    browser (obj): The web driver (e.g., "firefox").
     url (str): The Unify Events url to view.
-    nid (str): The student NID.
+    nid (str): The student UCF NID.
     password (str): The student password.
     """
     browser.visit(url=url)
+    browser.fill_form({'username': nid, 'password': password})
 
-    browser.fill('username', nid)
-    browser.fill('password', password)
-
-    log_in = browser.find_by_xpath('//button[contains(., "Log In")]')
+    log_in = browser.find_by_xpath('//button[text()="Log In"]')
     log_in.first.click()
 
     if browser.is_text_not_present('New User'):
         return None
 
     save_button = browser.find_by_xpath(
-        '//button[contains(., "Save and Continue")]')
+        '//button[text()="Save and Continue"]')
     save_button.first.click()
 
     skip_link = browser.find_link_by_text('Skip This Step')
@@ -56,6 +54,10 @@ def login(browser, url, nid, password):
 
 
 class TestUserAuthentication(LiveServerTestCase):
+
+    """
+    Test User Authentication.
+    """
 
     def setUp(self):
         """
@@ -78,8 +80,7 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         login(browser=self.browser, url=self.login_url, nid='', password='')
         errors = self.browser.find_by_xpath(
-            '//ul[contains(concat(" ", @class, " "), '
-            'concat(" ", "errorlist", " "))]')
+            '//ul[contains(concat(" ", normalize-space(@class), " "), " errorlist ")]')
         notices = [error.text for error in errors]
 
         ok_(len(errors) == 2, msg=None)
@@ -98,8 +99,7 @@ class TestUserAuthentication(LiveServerTestCase):
             nid=cfg['unify-events']['nid'],
             password='')
         errors = self.browser.find_by_xpath(
-            '//ul[contains(concat(" ", @class, " "), '
-            'concat(" ", "errorlist", " "))]')
+            '//ul[contains(concat(" ", normalize-space(@class), " "), " errorlist ")]')
         notice = errors.first.text
 
         ok_(len(errors) == 1, msg=None)
@@ -124,10 +124,10 @@ class TestUserAuthentication(LiveServerTestCase):
             url=self.login_url,
             nid=cfg['unify-events']['nid'] + ')(&))',
             password='password')
-        error = self.browser.find_by_xpath('//*[(@id = "manager-base")]//li')
+        error = self.browser.find_by_xpath('//*[(@id="manager-base")]//li')
         error_message = error.first.text
 
-        # If all is well, we shouldn't be viewing his/her calendar(s).
+        # If all is well, we shouldn't be viewing his or her calendar(s).
         ok_(error_message == 'Please enter a correct username and password. '
             'Note that both fields may be case-sensitive.', msg=None)
         ok_(self.browser.is_text_not_present('My Calendars'), msg=None)
@@ -145,15 +145,13 @@ class TestUserAuthentication(LiveServerTestCase):
             password=cfg['unify-events']['password'])
 
         username = self.browser.find_by_xpath(
-            '//a[contains(concat(" ", @class, " "), '
-            'concat(" ", "username", " "))]').first.text
+            '//a[contains(concat(" ", normalize-space(@class), " "), " username ")]').first.text
 
         # Are we viewing our login page as our targeted user?
         ok_(grep(r'Hi, [a-zA-Z]+', username) is not None, msg=None)
         ok_(self.browser.is_text_present('My Calendars'), msg=None)
 
-        logout_button = self.browser.find_by_xpath(
-            '//span[contains(.,"Log Out")]')
+        logout_button = self.browser.find_by_xpath('//span[text()="Log Out"]')
         logout_button.first.click()
 
         message = self.browser.find_by_xpath(
@@ -161,3 +159,55 @@ class TestUserAuthentication(LiveServerTestCase):
 
         ok_(message == 'You have logged out '
             'of the UCF Events system.', msg=None)
+
+
+class TestCalendarCreation(LiveServerTestCase):
+
+    """
+    Test Calendar Creation.
+    """
+
+    def setUp(self):
+        """
+        Start a browser instance.
+        """
+        self.browser = Browser('firefox')
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        self.login_url = self.live_server_url + '/manager/login/'
+        self.cfg = get_credentials()
+
+        login(
+            browser=self.browser,
+            url=self.login_url,
+            nid=self.cfg['unify-events']['nid'],
+            password=self.cfg['unify-events']['password'])
+
+    def tearDown(self):
+        """
+        Close a browser instance.
+        """
+        self.main_calendar.delete()
+        self.browser.quit()
+
+    def test_create_calendar(self):
+        """
+        Test that a Calendar can be created.
+        """
+        dropdown = self.browser.find_by_xpath(
+            '//ul[contains(concat(" ", normalize-space(@class), " "), '
+            '" actions-primary ")]//a[contains(concat(" ", '
+            'normalize-space(@class), " "), " dropdown-toggle ")]')
+        dropdown.first.click()
+
+        self.browser.click_link_by_partial_href('manager/calendar/create')
+        self.browser.fill_form({'title': 'Knightsec Events'})
+
+        create_button = self.browser.find_by_xpath(
+            '//button[text()="Create Calendar"]')
+        create_button.first.click()
+
+        status_message = self.browser.find_by_xpath(
+            '//li[starts-with(., "Knightsec")]').first.text
+
+        ok_(status_message == 'Knightsec Events was '
+            'created successfully.', msg=None)
