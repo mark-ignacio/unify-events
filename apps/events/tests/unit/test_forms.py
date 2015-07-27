@@ -10,10 +10,10 @@ from events.forms.manager import CalendarForm
 from events.forms.manager import CategoryForm
 from events.forms.manager import EventForm
 
-from .factories import UserFactory
-from .factories import CategoryFactory
-from .factories import CalendarFactory
-from .factories import EventFactory
+from ..factories.factories import UserFactory
+from ..factories.factories import CategoryFactory
+from ..factories.factories import CalendarFactory
+from ..factories.factories import EventFactory
 
 from random import randint
 
@@ -46,7 +46,7 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_init(self):
         """
-        Test that Calendar form can be successfully created.
+        Test Calendar form without ``data`` on initialization.
         """
         form = CalendarForm(instance=self.main_calendar)
 
@@ -55,7 +55,7 @@ class TestCalendarForm(TestCase):
 
     def test_main_calendar_form_is_readonly(self):
         """
-        Test that Main Calendar form title can't be modified.
+        Test that Main Calendar form title can not be updated.
         """
         data = {'title': 'asdf' * 10}
         form = CalendarForm(data=data, instance=self.main_calendar)
@@ -68,7 +68,7 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_can_also_be_mutable(self):
         """
-        Test that a user Calendar form title can be updated.
+        Test that user created Calendar form title can be updated.
         """
         data = {'title': 'DC4420 Events'}
         form = CalendarForm(data=data, instance=self.user_calendar)
@@ -81,7 +81,7 @@ class TestCalendarForm(TestCase):
 
     def test_user_calendars_on_save(self):
         """
-        Test that Calendar form title removes whitespace on save.
+        Test that Calendar form title strips whitespace on save.
         """
         ugly = '{:^30}'.format(self.user_calendar.title)
         form = CalendarForm(
@@ -99,7 +99,7 @@ class TestCalendarForm(TestCase):
     @raises(ValueError)
     def test_user_calendar_form_with_erroneous_title(self):
         """
-        Test that Calendar form raises on titles > 64 characters.
+        Test that Calendar form errors on titles > 64 characters.
         """
         def flavor_text(n=100):
             return ''.join([chr(randint(65, 122)) for _ in xrange(0, n)])
@@ -115,9 +115,9 @@ class TestCalendarForm(TestCase):
         form.save()
 
     @raises(ValueError)
-    def test_user_calendar_form_with_blank_fields(self):
+    def test_user_calendar_form_with_empty_fields(self):
         """
-        Test that Calendar form raises on a blank title field.
+        Test that Calendar form errors on empty title field.
         """
         form = CalendarForm(data={'title': ''}, instance=self.user_calendar)
 
@@ -164,7 +164,7 @@ class TestEventForm(TestCase):
 
     def test_event_on_init(self):
         """
-        Test that Event form can be successfully created.
+        Test Event form without ``data`` on initialization.
         """
         form = EventForm(
             initial={'user_calendars': self.user.calendars},
@@ -187,8 +187,18 @@ class TestEventForm(TestCase):
 
     def test_event_form_on_clean_with_naughty_tags(self):
         """
-        Test that Calendar form removes invalid tags.
+        Test that Calendar form strips invalid tags.
         """
+        tags = ['^@',
+                '\\',
+                '[]',
+                '\'',
+                '`',
+                '&quot;',
+                '"',
+                ';',
+                '*']
+
         form = EventForm(
             initial={'user_calendars': self.user.calendars},
             data={
@@ -200,7 +210,7 @@ class TestEventForm(TestCase):
                 'contact_name': self.user_event.contact_name,
                 'contact_phone': self.user_event.contact_phone,
                 'category': self.user_event.category.pk,
-                'tags': ['^@', '[]', '\'', '`', '&quot;', '"']},
+                'tags': tags},
             instance=self.user_event)
 
         # All instances of ``tags`` should now be cleansed.

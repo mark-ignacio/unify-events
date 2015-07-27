@@ -2,7 +2,7 @@ from nose.tools import ok_
 
 from django.test import LiveServerTestCase
 
-from .factories import CalendarFactory
+from ..factories.factories import CalendarFactory
 
 from splinter import Browser
 from re import match as grep
@@ -10,17 +10,19 @@ from re import match as grep
 import json
 import os
 
+
 CREDENTIALS = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
+    'fixtures',
     'credentials.json')
 
 
 def get_credentials():
     """
-    Read test credentials via JSON.
+    Retrieve test credentials JSON template.
 
     Returns:
-      dict: The dictionary containing test credentials.
+      dict: The JSON containing credentials.
     """
     with open(CREDENTIALS) as credentials:
         cfg = json.load(credentials)
@@ -31,9 +33,10 @@ def login(browser, url, nid, password):
     """
     Login to Unify Events as a targeted user.
 
-    browser (obj): The web driver (e.g., "firefox").
-    url (str): The Unify Events url to view.
-    nid (str): The student UCF NID.
+    browser (obj): The web driver object.
+    url (str): The Unify Events viewpath.
+
+    nid (str): The student NID.
     password (str): The student password.
     """
     browser.visit(url=url)
@@ -76,7 +79,7 @@ class TestUserAuthentication(LiveServerTestCase):
 
     def test_login_with_no_username_and_password(self):
         """
-        Test that a user can't login with empty fields.
+        Test user login with no username and password.
         """
         login(browser=self.browser, url=self.login_url, nid='', password='')
         errors = self.browser.find_by_xpath(
@@ -89,7 +92,7 @@ class TestUserAuthentication(LiveServerTestCase):
 
     def test_login_with_username_and_no_password(self):
         """
-        Test that a user can't login without a password.
+        Test user login with username and no password.
         """
         cfg = get_credentials()
 
@@ -107,13 +110,14 @@ class TestUserAuthentication(LiveServerTestCase):
 
     def test_login_with_injected_string(self):
         """
-        Test that a user can't bypass the login page.
+        Test user login for LDAP injection.
 
-        When checking the presence of a user/password:
-            (&(nid=foo)(password=bar))
+        Example:
+          When checking the presence of a user/password:
+              (&(nid=foo)(password=bar))
 
-        When given a valid NID, and an injected query:
-            (&(nid=foo)(&))(password=bar))
+          When given a valid NID, and an injected query:
+              (&(nid=foo)(&))(password=bar))
         """
         cfg = get_credentials()
 
@@ -134,7 +138,7 @@ class TestUserAuthentication(LiveServerTestCase):
 
     def test_user_can_login_successfully(self):
         """
-        Test that a user can login with valid credentials.
+        Test user login with valid credentials.
         """
         cfg = get_credentials()
 
@@ -191,7 +195,7 @@ class TestCalendarCreation(LiveServerTestCase):
 
     def test_create_calendar(self):
         """
-        Test that a Calendar can be created.
+        Test Calendar creation with valid title.
         """
         dropdown = self.browser.find_by_xpath(
             '//ul[contains(concat(" ", normalize-space(@class), " "), '
@@ -206,8 +210,8 @@ class TestCalendarCreation(LiveServerTestCase):
             '//button[text()="Create Calendar"]')
         create_button.first.click()
 
-        status_message = self.browser.find_by_xpath(
+        create_message = self.browser.find_by_xpath(
             '//li[starts-with(., "Knightsec")]').first.text
 
-        ok_(status_message == 'Knightsec Events was '
+        ok_(create_message == 'Knightsec Events was '
             'created successfully.', msg=None)

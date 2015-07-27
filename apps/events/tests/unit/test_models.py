@@ -1,16 +1,16 @@
 """
-Run tests: `python manage.py test events --verbosity=2 | grep ^Test.*`.
+Run tests: `python manage.py test events --verbosity=2`
 """
 
 from nose.tools import ok_
 from django.test import TestCase
 
-from .factories import UserFactory
-from .factories import CalendarFactory
-from .factories import CategoryFactory
-from .factories import EventFactory
-from .factories import LocationFactory
-from .factories import EventInstanceFactory
+from ..factories.factories import UserFactory
+from ..factories.factories import CalendarFactory
+from ..factories.factories import CategoryFactory
+from ..factories.factories import EventFactory
+from ..factories.factories import LocationFactory
+from ..factories.factories import EventInstanceFactory
 
 from re import match as grep
 
@@ -83,6 +83,9 @@ class TestCalendarModel(TestCase):
         self.main_calendar.delete()
         self.user_calendar.delete()
 
+        self.category.delete()
+        self.user_event.delete()
+
     def test_main_calendar_can_be_determined(self):
         """
         Test that Main Calendar is determined by ``FRONT_PAGE_CALENDAR_PK``.
@@ -100,7 +103,7 @@ class TestCalendarModel(TestCase):
 
     def test_calendar_can_not_be_owned_by_non_owner(self):
         """
-        Test that Calendar cannot be owned by a non-owner of a Calendar.
+        Test that Calendar can not be owned by a non-owner.
         """
         random_user = UserFactory(
             username='404_everywhere',
@@ -114,7 +117,7 @@ class TestCalendarModel(TestCase):
 
     def test_calendar_retrieves_all_event_instances(self):
         """
-        Test that Calendar can accrue event instance(s).
+        Test that Calendar can retrieve all event instances.
         """
         # Event instances should initially be empty.
         ok_(self.user_calendar.event_instances.count() == 0, msg=None)
@@ -129,9 +132,9 @@ class TestCalendarModel(TestCase):
 
         event_instance.delete()
 
-    def test_calendar_subscribes_to_events(self):
+    def test_calendar_can_subscribe_and_unsubscribe_to_events(self):
         """
-        Test that Calendar model can subscribe to event(s).
+        Test that Calendar can subscribe and unsubscribe to events.
         """
         # Let's subscribe to UCF's Main Calendar.
         self.user_calendar.subscriptions.add(self.main_calendar)
