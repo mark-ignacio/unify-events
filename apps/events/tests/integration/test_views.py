@@ -39,15 +39,18 @@ def login(browser, url, nid, password):
     nid (str): The student NID.
     password (str): The student password.
     """
+    # Open UCF Events home and login.
     browser.visit(url=url)
     browser.fill_form({'username': nid, 'password': password})
 
     log_in = browser.find_by_xpath('//button[text()="Log In"]')
     log_in.first.click()
 
+    # Check if first time logging in.
     if browser.is_text_not_present('New User'):
         return None
 
+    # Save Events setup and continue.
     save_button = browser.find_by_xpath(
         '//button[text()="Save and Continue"]')
     save_button.first.click()
@@ -197,12 +200,14 @@ class TestCalendarCreation(LiveServerTestCase):
         """
         Test Calendar creation with valid title.
         """
+        # Locate calendar dropdown menu.
         dropdown = self.browser.find_by_xpath(
             '//ul[contains(concat(" ", normalize-space(@class), " "), '
             '" actions-primary ")]//a[contains(concat(" ", '
             'normalize-space(@class), " "), " dropdown-toggle ")]')
         dropdown.first.click()
 
+        # Click dropdown element by <a>.
         self.browser.click_link_by_partial_href('manager/calendar/create')
         self.browser.fill_form({'title': 'Knightsec Events'})
 
@@ -210,6 +215,7 @@ class TestCalendarCreation(LiveServerTestCase):
             '//button[text()="Create Calendar"]')
         create_button.first.click()
 
+        # Check if calendar was created.
         create_message = self.browser.find_by_xpath(
             '//li[starts-with(., "Knightsec")]').first.text
 

@@ -1,5 +1,5 @@
 """
-Run tests: `python manage.py test events --verbosity=2`
+Run tests: `python manage.py test events.tests.unit`
 """
 
 from nose.tools import ok_
@@ -19,78 +19,86 @@ class TestLocationModel(TestCase):
 
     """Test Location Model."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         """
         Build Location model object(s).
         """
-        self.location_1 = LocationFactory.build(title='ENG2', room='301')
-        self.location_2 = LocationFactory.build(title='CHEM', room=None)
+        cls.map_url = 'http://map.ucf.edu/'
+        cls.bldg_1 = LocationFactory.build(
+            title='ENG2',
+            room='301',
+            url=cls.map_url + '?show=116')
+        cls.bldg_2 = LocationFactory.build(
+            title='CHEM',
+            room=None,
+            url=cls.map_url + '?foo=110')
 
     def test_location_combines_title_with_room(self):
         """
         Test Location creates a comboname with an appended room number.
         """
-        title = self.location_2.title
+        title = self.bldg_2.title
 
-        ok_(self.location_1.comboname == 'ENG2: 301', msg=None)
-        ok_(self.location_2.comboname == title, msg=None)
+        ok_(self.bldg_1.comboname == 'ENG2: 301', msg=None)
+        ok_(self.bldg_2.comboname == title, msg=None)
 
     def test_location_widget_url_with_valid_ucf_permalink(self):
         """
         Test Location creates a widget URL with a valid UCF map permalink.
         """
-        self.location_1.url = 'http://map.ucf.edu/?show=116'
-        widget_url = self.location_1.get_map_widget_url
-        result = grep(r'//map.ucf.edu/(?P<path>.*)', widget_url)
-
-        ok_(result is not None, msg=None)
+        widget_url = self.bldg_1.get_map_widget_url
+        url_match = grep(r'//map.ucf.edu/(?P<path>.*)', widget_url)
 
         # It shouldn't return a URL with an invalid UCF permalink.
-        self.location_2.url = 'http://map.ucf/?foo=110'
-        ok_(self.location_2.get_map_widget_url == False, msg=None)
+        ok_(url_match is not None, msg=None)
+        ok_(self.bldg_2.get_map_widget_url == False, msg=None)
 
 
 class TestCalendarModel(TestCase):
 
     """Test Calendar Model."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         """
         Create Calendar model object(s).
         """
-        self.user = UserFactory(
+        cls.user = UserFactory(
             username='dylonmackrvr',
             password='qwerty',
             email='dylonmackAg3@crazespaces.pw')
-        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
-        self.user_calendar = CalendarFactory(
+        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.user_calendar = CalendarFactory(
             title='Knightsec Events',
-            owner=self.user,
+            owner=cls.user,
             description='CTFs')
-        self.category = CategoryFactory(title='Meeting')
-        self.user_event = EventFactory(
-            calendar=self.user_calendar,
-            creator=self.user,
+        cls.category = CategoryFactory(title='Meeting')
+        cls.user_event = EventFactory(
+            calendar=cls.user_calendar,
+            creator=cls.user,
             title='Pick All the Locks',
             description='"Who just leveled up?!"',
-            category=self.category)
+            category=cls.category)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         """
         Delete Calendar model object(s).
         """
-        self.user.delete()
-        self.main_calendar.delete()
-        self.user_calendar.delete()
+        cls.user.delete()
+        cls.main_calendar.delete()
+        cls.user_calendar.delete()
 
-        self.category.delete()
-        self.user_event.delete()
+        cls.category.delete()
+        cls.user_event.delete()
 
     def test_main_calendar_can_be_determined(self):
         """
         Test that Main Calendar is determined by ``FRONT_PAGE_CALENDAR_PK``.
         """
-        ok_(self.main_calendar.pk is not None, msg=None)
+        ok_(self.main_calendar.pk is not None and isinstance(
+            self.main_calendar.pk, int), msg=None)
         ok_(self.main_calendar.is_main_calendar, msg=None)
 
     def test_calendar_can_identify_its_creator(self):
@@ -105,15 +113,13 @@ class TestCalendarModel(TestCase):
         """
         Test that Calendar can not be owned by a non-owner.
         """
-        random_user = UserFactory(
+        random_user = UserFactory.build(
             username='404_everywhere',
             password='r3@lSecure',
             email='rodneyrowe@crazespaces.pw')
 
         # What if given an arbitrary user? We expect this to be ``False``.
         ok_(self.user_calendar.is_creator(random_user) == False, msg=None)
-
-        random_user.delete()
 
     def test_calendar_retrieves_all_event_instances(self):
         """

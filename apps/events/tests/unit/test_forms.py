@@ -22,27 +22,29 @@ class TestCalendarForm(TestCase):
 
     """Test Calendar Form."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         """
         Create Calendar model object(s).
         """
-        self.user = UserFactory(
+        cls.user = UserFactory(
             username='garettdotson8CU',
             password='Pa55w0rd',
             email='garettdotsonMeZ@crazespaces.pw')
-        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
-        self.user_calendar = CalendarFactory(
+        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.user_calendar = CalendarFactory(
             title='DC407 Events',
-            owner=self.user,
+            owner=cls.user,
             description='Security talks')
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         """
         Delete Calendar model object(s).
         """
-        self.user.delete()
-        self.main_calendar.delete()
-        self.user_calendar.delete()
+        cls.user.delete()
+        cls.main_calendar.delete()
+        cls.user_calendar.delete()
 
     def test_calendar_form_init(self):
         """
@@ -131,36 +133,38 @@ class TestEventForm(TestCase):
 
     """Test Event Form."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         """
         Create initial Event model object(s).
         """
-        self.user = UserFactory(
+        cls.user = UserFactory(
             username='eileenblake7jB',
             password='Slipnot1',
             email='eileenblakeYpv@crazespaces.pw')
-        self.user_calendar = CalendarFactory(
+        cls.user_calendar = CalendarFactory(
             title='Morrissey Concert',
-            owner=self.user)
-        self.user_category = CategoryFactory(title='Music Concert')
-        self.user_event = EventFactory(
-            calendar=self.user_calendar,
-            creator=self.user,
+            owner=cls.user)
+        cls.user_category = CategoryFactory(title='Music Concert')
+        cls.user_event = EventFactory(
+            calendar=cls.user_calendar,
+            creator=cls.user,
             title='Morrissey Live @ UCF Stadium',
             description='Free with valid UCF ID',
             contact_name='Clara Cooper',
             contact_email='claracooperw6v@crazespaces.pw',
             contact_phone='(760) 624-6512',
-            category=self.user_category)
+            category=cls.user_category)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         """
         Delete model Event model object(s).
         """
-        self.user.delete()
-        self.user_category.delete()
-        self.user_calendar.delete()
-        self.user_event.delete()
+        cls.user.delete()
+        cls.user_category.delete()
+        cls.user_calendar.delete()
+        cls.user_event.delete()
 
     def test_event_on_init(self):
         """
