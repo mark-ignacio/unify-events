@@ -46,18 +46,17 @@ def login(browser, url, nid, password):
     log_in = browser.find_by_xpath('//button[text()="Log In"]')
     log_in.first.click()
 
-    # Check if first time logging in.
+    # Is it NOT our 1st time logging in?
     if browser.is_text_not_present('New User'):
         return None
 
-    # Save Events setup and continue.
+    # If so, save profile and continue.
     save_button = browser.find_by_xpath(
         '//button[text()="Save and Continue"]')
     save_button.first.click()
 
     skip_link = browser.find_link_by_text('Skip This Step')
     skip_link.first.click()
-
 
 class TestUserAuthentication(LiveServerTestCase):
 
@@ -167,7 +166,6 @@ class TestUserAuthentication(LiveServerTestCase):
         ok_(message == 'You have logged out '
             'of the UCF Events system.', msg=None)
 
-
 class TestCalendarCreation(LiveServerTestCase):
 
     """
@@ -196,28 +194,70 @@ class TestCalendarCreation(LiveServerTestCase):
         self.main_calendar.delete()
         self.browser.quit()
 
-    def test_create_calendar(self):
+    def create_calendar(self, title):
         """
-        Test Calendar creation with valid title.
+        Create a calendar with any given title.
         """
         # Locate calendar dropdown menu.
-        dropdown = self.browser.find_by_xpath(
-            '//ul[contains(concat(" ", normalize-space(@class), " "), '
-            '" actions-primary ")]//a[contains(concat(" ", '
-            'normalize-space(@class), " "), " dropdown-toggle ")]')
-        dropdown.first.click()
+        self.browser.find_by_css('.actions-primary .dropdown-toggle').first.click()
 
         # Click dropdown element by <a>.
         self.browser.click_link_by_partial_href('manager/calendar/create')
-        self.browser.fill_form({'title': 'Knightsec Events'})
+        self.browser.fill_form({'title': title})
 
-        create_button = self.browser.find_by_xpath(
-            '//button[text()="Create Calendar"]')
-        create_button.first.click()
+        self.browser.find_by_xpath(
+            '//button[text()="Create Calendar"]').first.click()
 
         # Check if calendar was created.
-        create_message = self.browser.find_by_xpath(
-            '//li[starts-with(., "Knightsec")]').first.text
+        success_message = self.browser.find_by_xpath(
+            '//li[starts-with(., "{0}")]'.format(title)).first.text
 
-        ok_(create_message == 'Knightsec Events was '
-            'created successfully.', msg=None)
+        ok_(success_message == '{0} was created '
+            'successfully.'.format(title), msg=None)
+
+        self.browser.find_by_css('.actions-primary .dropdown-toggle').first.click()
+
+        # Find created calendar by link.
+        self.browser.find_by_xpath(
+            '//a[contains(., "{0}")]'.format(title)).first.click()
+
+    def fuzz_blindly(self, custom=None):
+        """
+        A light-weight "fuzzer" to test unexpected calendar input.
+
+        Link: http://pages.cs.wisc.edu/~bart/fuzz/
+
+        Args:
+          custom (list[str]): The list to fuzz with.
+        """
+        presets = [
+            '&',
+            '*/*',
+            '(',
+            ')',
+            '*|',
+            '@',
+            '|',
+            '!',
+            ',',
+            '*()|&']
+
+        fuzzers = presets if custom is None else custom
+        crashed = False
+        for fuzz in fuzzers:
+            self.create_calendar(title=fuzz)
+            h1 = self.browser.find_by_xpath('//h1').value
+            if h1 == '500 - Internal Server Error':
+                crashed = True
+                break
+        ok_(not crashed, msg=None)
+
+    def test_create_calendar(self):
+        """
+        Test Calendar creation with "expected" input.
+        """
+        title = 'Knightsec Events'
+        self.create_calendar(title=title)
+        h1 = self.browser.find_by_xpath('//h1').value
+
+        ok_(h1 == 'My Calendar: {0}'.format(title), msg=None)
