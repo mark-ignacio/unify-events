@@ -5,6 +5,7 @@ Test via shell: `python manage.py test events.tests.unit`
 from nose.tools import raises
 from nose.tools import ok_
 
+from django.conf import settings
 from django.test import TestCase
 
 from events.models import Calendar
@@ -20,6 +21,7 @@ from ..factories.factories import CalendarFactory
 from ..factories.factories import EventFactory
 
 from random import randint
+from random import choice
 
 
 def event_data(event, options={}):
@@ -32,6 +34,9 @@ def event_data(event, options={}):
     Returns:
       dict: The updated event form data.
     """
+    tag = choice(['Academic',
+                  'Meeting',
+                  'Entertainment'])
     generic = {
         'title': event.title,
         'description': event.description,
@@ -41,7 +46,7 @@ def event_data(event, options={}):
         'contact_name': event.contact_name,
         'contact_phone': event.contact_phone,
         'category': event.category.pk,
-        'tags': 'Academic'}
+        'tags': tag}
 
     updated_data = generic.copy()
     updated_data.update(options)
@@ -59,7 +64,10 @@ class TestCalendarForm(TestCase):
             password='Pa55w0rd',
             email='garettdotsonMeZ@crazespaces.pw')
 
-        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.main_calendar = CalendarFactory(
+            id=settings.FRONT_PAGE_CALENDAR_PK,
+            title='Events at UCF',
+            owner=None)
 
         cls.user_calendar = CalendarFactory(
             title='DC407 Events',
@@ -187,16 +195,15 @@ class TestEventForm(TestCase):
 
     def test_event_form_on_clean_with_naughty_tags(self):
         """Test that Calendar form cleanses invalid tags."""
-        tags = [
-            '^@',
-            '\\',
-            '[]',
-            '\'',
-            '`',
-            '&quot;',
-            '"',
-            ';',
-            '*']
+        tags = ['^@',
+                '\\',
+                '[]',
+                '\'',
+                '`',
+                '&quot;',
+                '"',
+                ';',
+                '*']
 
         form = EventForm(
             initial={'user_calendars': self.user.calendars},

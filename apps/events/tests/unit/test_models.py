@@ -3,6 +3,8 @@ Test via shell: `python manage.py test events.tests.unit`
 """
 
 from nose.tools import ok_
+
+from django.conf import settings
 from django.test import TestCase
 
 from ..factories.factories import UserFactory
@@ -62,7 +64,10 @@ class TestCalendarModel(TestCase):
             password='qwerty',
             email='dylonmackAg3@crazespaces.pw')
 
-        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.main_calendar = CalendarFactory(
+            id=settings.FRONT_PAGE_CALENDAR_PK,
+            title='Events at UCF',
+            owner=None)
 
         cls.user_calendar = CalendarFactory(
             title='Knightsec Events',

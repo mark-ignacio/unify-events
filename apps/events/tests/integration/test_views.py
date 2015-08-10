@@ -1,5 +1,6 @@
 from nose.tools import ok_
 
+from django.conf import settings
 from django.test import LiveServerTestCase
 
 from ..factories.factories import CalendarFactory
@@ -68,8 +69,12 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Start a browser instance.
         """
+        self.main_calendar = CalendarFactory(
+            id=settings.FRONT_PAGE_CALENDAR_PK,
+            title='Events at UCF',
+            owner=None)
+
         self.browser = Browser('firefox')
-        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
         self.login_url = self.live_server_url + '/manager/login/'
 
     def tearDown(self):
