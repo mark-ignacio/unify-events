@@ -119,7 +119,6 @@ class TestCalendarModel(TestCase):
         """Test that Calendar can retrieve all event instances."""
         # Event instances should initially be empty.
         ok_(self.user_calendar.event_instances.count() == 0, msg=None)
-        # Check that Calendar now contains the event.
         ok_(self.user_calendar.events.filter(
             title__exact='Pick All the Locks').count() == 1, msg=None)
 
