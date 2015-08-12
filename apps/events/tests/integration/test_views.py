@@ -26,8 +26,8 @@ def get_credentials():
       dict: The JSON containing credentials.
     """
     with open(CREDENTIALS) as credentials:
-        cfg = json.load(credentials)
-    return cfg
+        auth = json.load(credentials)
+    return auth
 
 
 def login(browser, url, nid, password):
@@ -69,10 +69,7 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Start a browser instance.
         """
-        self.main_calendar = CalendarFactory(
-            id=settings.FRONT_PAGE_CALENDAR_PK,
-            title='Events at UCF',
-            owner=None)
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
 
         self.browser = Browser('firefox')
         self.login_url = self.live_server_url + '/manager/login/'
@@ -101,13 +98,12 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Test user login with username and no password.
         """
-        cfg = get_credentials()
+        auth = get_credentials()
 
-        login(
-            browser=self.browser,
-            url=self.login_url,
-            nid=cfg['unify-events']['nid'],
-            password='')
+        login(browser=self.browser,
+              url=self.login_url,
+              nid=auth['unify-events']['nid'],
+              password='')
         errors = self.browser.find_by_xpath(
             '//ul[contains(concat(" ", normalize-space(@class), " "), " errorlist ")]')
         notice = errors.first.text
@@ -126,16 +122,15 @@ class TestUserAuthentication(LiveServerTestCase):
           When given a valid NID, and an injected query:
               (&(nid=foo)(&))(password=bar))
         """
-        cfg = get_credentials()
+        auth = get_credentials()
 
         # Check to see if we can bypass the login by adding a LDAP query.
         # Because this query is always true, the password doesn't matter.
-        # See: https://www.owasp.org/index.php/Testing_for_LDAP_injection_(OTG-INPVAL-006).
-        login(
-            browser=self.browser,
-            url=self.login_url,
-            nid=cfg['unify-events']['nid'] + ')(&))',
-            password='password')
+        # See: https://www.owasp.org/index.php/Testing_for_LDAP_Injection_(OTG-INPVAL-006).
+        login(browser=self.browser,
+              url=self.login_url,
+              nid=auth['unify-events']['nid'] + ')(&))',
+              password='password')
         error = self.browser.find_by_xpath('//*[(@id="manager-base")]//li')
         error_message = error.first.text
 
@@ -148,13 +143,12 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Test user login with valid credentials.
         """
-        cfg = get_credentials()
+        auth = get_credentials()
 
-        login(
-            browser=self.browser,
-            url=self.login_url,
-            nid=cfg['unify-events']['nid'],
-            password=cfg['unify-events']['password'])
+        login(browser=self.browser,
+              url=self.login_url,
+              nid=auth['unify-events']['nid'],
+              password=auth['unify-events']['password'])
 
         username = self.browser.find_by_xpath(
             '//a[contains(concat(" ", normalize-space(@class), " "), " username ")]').first.text
@@ -182,20 +176,16 @@ class TestCalendarCreation(LiveServerTestCase):
         """
         Start a browser instance.
         """
-        self.main_calendar = CalendarFactory(
-            id=settings.FRONT_PAGE_CALENDAR_PK,
-            title='Events at UCF',
-            owner=None)
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
 
         self.browser = Browser('firefox')
         self.login_url = self.live_server_url + '/manager/login/'
-        self.cfg = get_credentials()
+        self.auth = get_credentials()
 
-        login(
-            browser=self.browser,
-            url=self.login_url,
-            nid=self.cfg['unify-events']['nid'],
-            password=self.cfg['unify-events']['password'])
+        login(browser=self.browser,
+              url=self.login_url,
+              nid=self.auth['unify-events']['nid'],
+              password=self.auth['unify-events']['password'])
 
     def tearDown(self):
         """
@@ -231,7 +221,7 @@ class TestCalendarCreation(LiveServerTestCase):
         self.browser.find_by_xpath(
             '//a[contains(., "{0}")]'.format(title)).first.click()
 
-    def fuzz_blindly(self, custom=None):
+    def fuzz_blindly(self, customs=None):
         """
         A light-weight "fuzzer" to test unexpected calendar input.
 
@@ -240,7 +230,7 @@ class TestCalendarCreation(LiveServerTestCase):
           - [2] https://csg.utdallas.edu/wp-content/uploads-2012/10/Fuzzing-Part-1.pdf
 
         Args:
-          custom (list[str]): The list to fuzz with.
+          customs (list[str]): The list to fuzz with.
         """
         presets = ['&',
                    '*/*',
@@ -253,9 +243,10 @@ class TestCalendarCreation(LiveServerTestCase):
                    ',',
                    '*()|&']
 
-        fuzzers = presets if custom is None else custom
+        fuzzers = presets if customs is None else customs
         crashed = False
         for fuzz in fuzzers:
+            # Create a calendar and render on the page.
             self.create_calendar(title=fuzz)
             h1 = self.browser.find_by_xpath('//h1').value
             if h1 == '500 - Internal Server Error':
@@ -265,10 +256,11 @@ class TestCalendarCreation(LiveServerTestCase):
 
     def test_create_calendar(self):
         """
-        Test Calendar creation with "expected" input.
+        Test Calendar creation with expected input.
         """
         title = 'Knightsec Events'
         self.create_calendar(title=title)
         h1 = self.browser.find_by_xpath('//h1').value
 
+        # Verify we're viewing the correct calendar.
         ok_(h1 == 'My Calendar: {0}'.format(title), msg=None)

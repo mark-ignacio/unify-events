@@ -115,6 +115,7 @@ class EventInstanceFactory(DjangoModelFactory):
 
     event = SubFactory(EventFactory)
     location = SubFactory(LocationFactory)
+
     start = str(fake.date_time_between_dates(datetime_start=today()))
     end = str(fake.date_time_between_dates(
               datetime_start=days_from_today(days=1),
