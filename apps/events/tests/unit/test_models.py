@@ -127,7 +127,7 @@ class TestEventModel(TestCase):
         """
         Test that an event generates an event permalink.
         """
-        regex = r'https?://unify-events.smca.ucf.edu/event/\d{1,}/(?P<slug>[-\w]+)/'
+        regex = r'https?://unify-events\.smca\.ucf\.edu/event/\d{1,}/(?P<slug>[-\w]+)/'
         match = grep(regex, self.user_event.get_absolute_url())
 
         ok_(match is not None, msg=None)
