@@ -63,7 +63,6 @@ $null
 *(|(mail=*))
 *(|(objectclass=*))
 
-
 === XPATH Injection ===
 /
 //
@@ -71,7 +70,6 @@ $null
 */*
 @*
 *|
-
 
 === Multi-Byte Text ===
 我来杜绝这种
