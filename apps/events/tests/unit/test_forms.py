@@ -2,22 +2,23 @@
 Test via shell: `python manage.py test events.tests.unit`
 """
 
-from nose.tools import ok_, raises
-
-from ..factories.factories import (UserFactory, CategoryFactory,
-    CalendarFactory, EventFactory)
+from nose.tools import ok_, eq_, raises
 
 from django.conf import settings
 from django.test import TestCase
 
+from ..factories.factories import UserFactory
+from ..factories.factories import CategoryFactory
+from ..factories.factories import CalendarFactory
+from ..factories.factories import EventFactory
+
 from events.models import Calendar, Event
 from events.forms.manager import CalendarForm, CategoryForm, EventForm
-
 from random import choice, randint
 
 
 def event_data(event, options={}):
-    """Fill event form.
+    """Populate ``Event`` form.
 
     Args:
       event (obj): The event instance to edit.
@@ -47,13 +48,13 @@ def event_data(event, options={}):
 class TestCalendarForm(TestCase):
 
     """
-    Test Calendar Form.
+    Test ``Calendar`` form.
     """
 
     @classmethod
     def setUpClass(cls):
         """
-        Create Calendar form models.
+        Setup ``Calendar`` form models.
         """
         cls.user = UserFactory(username='garettdotson8CU',
                                password='Pa55w0rd',
@@ -67,7 +68,7 @@ class TestCalendarForm(TestCase):
     @classmethod
     def tearDownClass(cls):
         """
-        Delete Calendar form models.
+        Teardown ``Calendar`` form models.
         """
         cls.user.delete()
         cls.main_calendar.delete()
@@ -75,17 +76,17 @@ class TestCalendarForm(TestCase):
 
     def test_calendar_form_on_init(self):
         """
-        Test Calendar form on init.
+        Test ``Calendar`` form on init.
         """
         form = CalendarForm(instance=self.main_calendar)
 
         ok_(isinstance(form.instance, Calendar), msg=None)
-        ok_(form.instance.pk == self.main_calendar.pk, msg=None)
-        ok_(form.initial['title'] == 'Events at UCF')
+        eq_(self.main_calendar.pk, form.instance.pk, msg=None)
+        eq_('Events at UCF', form.initial['title'], msg=None)
 
     def test_main_calendar_form_is_readonly(self):
         """
-        Test that main Calendar form is read-only.
+        Test main ``Calendar`` form is read-only.
         """
         data = {'title': 'asdf' * 10}
         form = CalendarForm(data=data, instance=self.main_calendar)
@@ -94,11 +95,11 @@ class TestCalendarForm(TestCase):
 
         # This form shouldn't change from what was created [line 33].
         # Why? It assumes the first calendar is the primary calendar.
-        ok_(form.clean_title() == form.initial['title'], msg=None)
+        eq_(form.initial['title'], form.clean_title(), msg=None)
 
     def test_user_calendar_form_is_mutable(self):
         """
-        Test that user Calendar form can be updated.
+        Test that user ``Calendar`` form can be updated.
         """
         data = {'title': 'DC4420 Events'}
         form = CalendarForm(data=data, instance=self.user_calendar)
@@ -106,11 +107,11 @@ class TestCalendarForm(TestCase):
         ok_(form.is_valid(), msg=None)
         # We've edited a form instance which isn't the Main Calendar.
         # In this case, we should get back an updated calendar title.
-        ok_(form.clean_title() == u'DC4420 Events', msg=None)
+        eq_(u'DC4420 Events', form.clean_title(), msg=None)
 
     def test_user_calendars_strips_whitespace_on_save(self):
         """
-        Test that Calendar form strips whitespace on save.
+        Test that ``Calendar`` form strips all instances of whitespace.
         """
         ugly = '{0:^30}'.format(self.user_calendar.title)
         form = CalendarForm(data={'title': ugly}, instance=self.user_calendar)
@@ -120,12 +121,12 @@ class TestCalendarForm(TestCase):
         spaces = [space for space in calendar.title.split(' ') if space == '']
 
         ok_(not spaces, msg=None)
-        ok_(calendar.title == self.user_calendar.title, msg=None)
+        eq_(self.user_calendar.title, calendar.title, msg=None)
 
     @raises(ValueError)
     def test_user_calendar_form_with_erroneous_title(self):
         """
-        Test that Calendar form errors on titles >= 65 characters.
+        Test that ``Calendar`` form errors on titles >= 65 characters.
         """
         def flavor_text(n=100):
             return ''.join([chr(randint(65, 122)) for _ in xrange(0, n)])
@@ -135,32 +136,32 @@ class TestCalendarForm(TestCase):
             instance=self.user_calendar)
 
         ok_(not form.is_valid(), msg=None)
-        ok_(form.errors['title'][0] == u'Ensure this value has at most 64 '
-            'characters (it has 65).', msg=None)
+        eq_(u'Ensure this value has at most 64 characters (it has 65).',
+            form.errors['title'][0], msg=None)
         form.save()
 
     @raises(ValueError)
     def test_user_calendar_form_with_empty_title(self):
         """
-        Test that Calendar form errors on empty title.
+        Test that ``Calendar`` form errors on empty title field.
         """
         form = CalendarForm(data={'title': ''}, instance=self.user_calendar)
 
         ok_(not form.is_valid(), msg=None)
-        ok_(form.errors['title'][0] == u'This field is required.', msg=None)
+        eq_(u'This field is required.', form.errors['title'][0], msg=None)
         form.save()
 
 
 class TestEventForm(TestCase):
 
     """
-    Test Event Form.
+    Test ``Event`` form.
     """
 
     @classmethod
     def setUpClass(cls):
         """
-        Create Event form models.
+        Setup ``Event`` form models.
         """
         cls.user = UserFactory(username='eileenblake7jB',
                                password='Slipnot1',
@@ -182,7 +183,7 @@ class TestEventForm(TestCase):
     @classmethod
     def tearDownClass(cls):
         """
-        Delete Event form models.
+        Teardown ``Event`` form models.
         """
         cls.user.delete()
         cls.user_category.delete()
@@ -191,18 +192,18 @@ class TestEventForm(TestCase):
 
     def test_event_on_init(self):
         """
-        Test Event form on init.
+        Test ``Event`` form on init.
         """
         form = EventForm(initial={'user_calendars': self.user.calendars},
                          data=event_data(self.user_event, options=dict(tags='Concert')),
                          instance=self.user_event)
 
         choices = [field for field in form.fields['calendar'].choices]
-        ok_(choices[0][1] == u'Morrissey Concert', msg=None)
+        eq_(u'Morrissey Concert', choices[0][1], msg=None)
 
     def test_event_form_on_clean_with_naughty_tags(self):
         """
-        Test that Calendar form cleanses invalid tags.
+        Test that ``Event`` form cleanses invalid tags.
         """
         tags = ['^@',
                 '\\',

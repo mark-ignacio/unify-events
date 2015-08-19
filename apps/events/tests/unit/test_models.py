@@ -2,31 +2,34 @@
 Test via shell: `python manage.py test events.tests.unit`
 """
 
-from nose.tools import ok_
-
-from datetime import datetime, timedelta
+from nose.tools import ok_, eq_
 
 from django.conf import settings
 from django.test import TestCase
 
-from ..factories.factories import (UserFactory, CalendarFactory,
-    CategoryFactory, EventFactory, LocationFactory, EventInstanceFactory,
-    Event, EventInstance)
+from ..factories.factories import UserFactory
+from ..factories.factories import CalendarFactory
+from ..factories.factories import CategoryFactory
+from ..factories.factories import EventFactory
+from ..factories.factories import LocationFactory
+from ..factories.factories import EventInstanceFactory
+from ..factories.factories import Event, EventInstance
 
-from re import match as grep
 from random import choice
+from re import match as grep
+from datetime import datetime, timedelta
 
 
 class TestLocationModel(TestCase):
 
     """
-    Test Location Model.
+    Test ``Location`` model.
     """
 
     @classmethod
     def setUpClass(cls):
         """
-        Build Location models.
+        Setup ``Location`` models.
         """
         cls.map_url = 'http://map.ucf.edu/'
 
@@ -39,16 +42,14 @@ class TestLocationModel(TestCase):
 
     def test_location_appends_title_with_room(self):
         """
-        Test Location creates a comboname with an appended room number.
+        Test ``Location`` creates a comboname with an appended room number.
         """
-        title = self.bldg_2.title
-
-        ok_(self.bldg_1.comboname == 'ENG2: 301', msg=None)
-        ok_(self.bldg_2.comboname == title, msg=None)
+        eq_('ENG2: 301', self.bldg_1.comboname, msg=None)
+        eq_(self.bldg_2.title, self.bldg_2.comboname, msg=None)
 
     def test_location_widget_url_with_valid_ucf_permalink(self):
         """
-        Test Location creates a widget URL with a valid UCF map permalink.
+        Test ``Location`` creates a widget URL with a valid UCF map permalink.
         """
         widget_url = self.bldg_1.get_map_widget_url
         url_match = grep(r'//map.ucf.edu/(?P<path>.*)', widget_url)
@@ -60,13 +61,13 @@ class TestLocationModel(TestCase):
 class TestEventModel(TestCase):
 
     """
-    Test Event Model.
+    Test ``Event`` Model.
     """
 
     @classmethod
     def setUpClass(cls):
         """
-        Create Event models.
+        Setup ``Event`` models.
         """
         cls.user = UserFactory()
 
@@ -93,7 +94,7 @@ class TestEventModel(TestCase):
     @classmethod
     def tearDownClass(cls):
         """
-        Delete Event models.
+        Teardown ``Event`` models.
         """
         cls.user.delete()
 
@@ -108,42 +109,43 @@ class TestEventModel(TestCase):
 
     def test_event_can_reoccur_over_time(self):
         """
-        Test that an event can reoccur repeatedly.
+        Test that an ``Event`` can reoccur repeatedly.
         """
         ok_(self.user_event.has_instances, msg=None)
         ok_(self.user_calendar.event_instances.count() > 1, msg=None)
 
     def test_event_can_retrieve_first_event_instance(self):
         """
-        Test that the first event instance is retrieved.
+        Test that the first ``Event`` instance is retrieved.
         """
         first_recurrence = self.user_event.get_first_instance
+        event_title = 'Garage Sale -- All Welcome'
 
         # The first recurrence should always be within this month.
-        ok_(first_recurrence.title == 'Garage Sale -- All Welcome', msg=None)
-        ok_(first_recurrence.start.month == datetime.now().month, msg=None)
+        eq_(event_title, first_recurrence.title, msg=None)
+        eq_(datetime.now().month, first_recurrence.start.month, msg=None)
 
     def test_event_can_generate_an_event_permalink(self):
         """
-        Test that an event generates an event permalink.
+        Test that an ``Event`` generates an event permalink.
         """
         regex = r'https?://unify-events\.smca\.ucf\.edu/event/\d{1,}/(?P<slug>[-\w]+)/'
         match = grep(regex, self.user_event.get_absolute_url())
 
         ok_(match is not None, msg=None)
-        ok_(match.group('slug') == 'garage-sale-all-welcome', msg=None)
+        eq_('garage-sale-all-welcome', match.group('slug'), msg=None)
 
 
 class TestCalendarModel(TestCase):
 
     """
-    Test Calendar model.
+    Test ``Calendar`` model.
     """
 
     @classmethod
     def setUpClass(cls):
         """
-        Create Calendar models.
+        Setup ``Calendar`` models.
         """
         cls.user = UserFactory(username='dylonmackrvr',
                                password='qwerty',
@@ -165,7 +167,7 @@ class TestCalendarModel(TestCase):
     @classmethod
     def tearDownClass(cls):
         """
-        Delete Calendar models.
+        Teardown ``Calendar`` models.
         """
         cls.user.delete()
         cls.main_calendar.delete()
@@ -176,7 +178,7 @@ class TestCalendarModel(TestCase):
 
     def test_main_calendar_can_be_determined(self):
         """
-        Test that main Calendar is found by ``FRONT_PAGE_CALENDAR_PK``.
+        Test main ``Calendar`` is determined by ``FRONT_PAGE_CALENDAR_PK``.
         """
         ok_(self.main_calendar.pk is not None and isinstance(
             self.main_calendar.pk, (int, long)), msg=None)
@@ -184,7 +186,7 @@ class TestCalendarModel(TestCase):
 
     def test_calendar_can_identify_its_creator(self):
         """
-        Test that Calendar can be owned and identified by a user model.
+        Test that ``Calendar`` can be owned and identified by a user model.
         """
         # Is the user an owner of Calendar? We expect this to be ``True``.
         ok_(self.user_calendar.owner is not None, msg=None)
@@ -192,7 +194,7 @@ class TestCalendarModel(TestCase):
 
     def test_calendar_can_not_be_owned_by_non_owner(self):
         """
-        Test that Calendar can not be owned by a non-owner.
+        Test that ``Calendar`` can not be owned by a non-owner.
         """
         random_user = UserFactory.build(username='404_everywhere',
                                         password='r3@lSecure',
@@ -206,14 +208,14 @@ class TestCalendarModel(TestCase):
         Test that Calendar can retrieve all event instances.
         """
         # Event instances should initially be empty.
-        ok_(self.user_calendar.event_instances.count() == 0, msg=None)
-        ok_(self.user_calendar.events.filter(
-            title__exact='Pick All the Locks').count() == 1, msg=None)
+        eq_(0, self.user_calendar.event_instances.count(), msg=None)
+        eq_(1, self.user_calendar.events.filter(
+            title__exact='Pick All the Locks').count(), msg=None)
 
         event_instance = EventInstanceFactory(event=self.user_event)
 
         # Event instances should now be equal to one.
-        ok_(self.user_calendar.event_instances.count() == 1, msg=None)
+        eq_(1, self.user_calendar.event_instances.count(), msg=None)
 
         event_instance.delete()
 
@@ -226,13 +228,13 @@ class TestCalendarModel(TestCase):
         self.main_calendar.copy_future_events(self.user_calendar)
 
         # Did we subscribe? This should be ``True``.
-        ok_(self.main_calendar.subscribing_calendars.count() == 1, msg=None)
+        eq_(1, self.main_calendar.subscribing_calendars.count(), msg=None)
 
         self.user_calendar.subscriptions.remove(self.main_calendar)
         self.user_calendar.delete_subscribed_events(self.main_calendar)
 
         # Now, there shouldn't be any subscriptions.
-        ok_(self.main_calendar.subscribing_calendars.count() == 0, msg=None)
+        eq_(0, self.main_calendar.subscribing_calendars.count(), msg=None)
 
     def test_calendar_can_import_an_event(self):
         """
@@ -244,12 +246,12 @@ class TestCalendarModel(TestCase):
                              category=self.category)
 
         # We should only have the event we saved before-hand.
-        ok_(self.user_calendar.events.count() == 1, msg=None)
+        eq_(1, self.user_calendar.events.count(), msg=None)
 
         imported = self.user_calendar.import_event(event)
 
         # Have we imported the event to Knightsec Events?
         ok_(isinstance(imported, Event), msg=None)
-        ok_(imported.calendar.title == 'Knightsec Events', msg=None)
+        eq_('Knightsec Events', imported.calendar.title, msg=None)
 
         imported.delete()
