@@ -1,42 +1,6 @@
-=== Quotations ===
-""
+=== Quotes ===
 '
-"
 ''
-""
-"'"
-"''''"'"
-"'"'"''''"
-
-=== Null Byte Characters ===
-%00
-\x00
-\0
-\00
-\000
-\z
-0x00
-%00%00
-\x00\x00
-\u0000\u0000
-\0\0
-
-=== Integer Overflows ===
--1
-0
-0x100
-0x1000
-0x3fffffff
-0x7ffffffe
-0x80000000
-0xfffffffe
-
-=== Windows Command Injection ===
-||+dir|c:\
-%26%26+|+dir c:\
-+|+Dir+c:%255c
-%0a+dir+c:%2f
-$%26%26dir+c:%255c
 
 === Malicious UNIX input ===
 %
@@ -45,12 +9,8 @@ $%26%26dir+c:%255c
 <!
 <<
 <<<
-<>"'%;)(&+
-$NULL
-$null
 ../
 ..\
-/,%ENV,/
 
 === LDAP Injection ===
 !
@@ -59,9 +19,6 @@ $null
 )
 &
 *()|&'
-*()|%26
-*(|(mail=*))
-*(|(objectclass=*))
 
 === XPATH Injection ===
 /

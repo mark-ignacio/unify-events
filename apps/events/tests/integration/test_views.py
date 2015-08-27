@@ -1,21 +1,26 @@
-from nose.tools import ok_, eq_
+"""
+Test via shell: `python manage.py test events.tests.integration`
+"""
 
 from django.conf import settings
 from django.test import LiveServerTestCase
 
 from ..factories.factories import CalendarFactory
 
-from splinter import Browser
 from re import match as grep
+
+from os.path import join
+from os.path import dirname
+from os.path import realpath
+
+from splinter import Browser
 
 import json
 import os
 
-CREDENTIALS = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    'auth',
-    'credentials.json')
 
+FUZZ_VECTORS = join(dirname(realpath(__file__)), 'fuzz', 'fuzz.txt')
+CREDENTIALS = join(dirname(realpath(__file__)), 'auth', 'credentials.json')
 
 def get_credentials():
     """
@@ -33,30 +38,53 @@ def login(browser, url, nid, password):
     """
     Login to Unify Events as a targeted user.
 
-    browser (obj): The web driver object.
-    url (str): The Unify Events viewpath.
+    Args:
+      browser (obj): The web driver object.
+      url (str): The Unify Events viewpath.
 
-    nid (str): The student NID.
-    password (str): The student password.
+      nid (str): The student NID.
+      password (str): The student password.
     """
-    # Open UCF Events home and login.
+    # Open Unify Events homepage and authenticate.
     browser.visit(url)
     browser.fill_form({'username': nid, 'password': password})
 
-    log_in = browser.find_by_xpath('//button[text()="Log In"]')
-    log_in[0].click()
+    browser.find_by_xpath('//button[text()="Log In"]')[0].click()
 
-    # If logged in before, don't setup profile.
+    # Only make a profile if first time loggin in.
     if browser.is_text_not_present('New User'):
-        return None
+        return
 
-    # Otherwise, create a Unify Events profile.
-    xpath = '//button[text()="Save and Continue"]'
-    save_button = browser.find_by_xpath(xpath)
-    save_button[0].click()
+    # Otherwise, create a new profile with Events.
+    xpath_query = '//button[text()="Save and Continue"]'
+    browser.find_by_xpath(xpath_query)[0].click()
 
-    skip_link = browser.find_link_by_text('Skip This Step')
-    skip_link[0].click()
+    browser.find_link_by_text('Skip This Step')[0].click()
+
+
+def create_calendar(browser, title):
+    """
+    Create a ``Calendar`` within Unify-Events.
+
+    Args:
+      browser (obj): The web driver object.
+      title (str): The calendar title.
+    """
+    # Locate "My Calendars" dropdown menu.
+    browser.find_by_css('.actions-primary .dropdown-toggle')[0].click()
+
+    # Click on link "Create New Calendar".
+    browser.click_link_by_partial_href('manager/calendar/create')
+    browser.fill('title', title)
+
+    browser.find_by_xpath(
+        '//button[text()="Create Calendar"]')[0].click()
+
+    browser.find_by_css('.actions-primary .dropdown-toggle')[0].click()
+
+    # Find and click the created calendar.
+    browser.find_by_xpath(
+        '//a[contains(., "{0}")]'.format(title))[0].click()
 
 class TestUserAuthentication(LiveServerTestCase):
 
@@ -84,63 +112,63 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Test login with no username and password.
         """
-        none = ''
         login(browser=self.browser,
               url=self.login_url,
-              nid=none,
-              password=none)
+              nid='',
+              password='')
 
         errors = self.browser.find_by_css('.errorlist')
-        notices = [error.text for error in errors]
+        feedback = [error.text for error in errors]
 
-        eq_(2, len(errors), msg=None)
-        ok_(all(notice == u'This field is required.'
-            for notice in notices), msg=None)
+        assert len(feedback) == 2 and all(msg == u'This field is required.'
+            for msg in feedback)
 
     def test_login_with_username_and_no_password(self):
         """
         Test login with username and no password.
         """
-        none, auth = '', get_credentials()
+        auth = get_credentials()
 
         login(browser=self.browser,
               url=self.login_url,
               nid=auth['unify-events']['nid'],
-              password=none)
+              password='')
 
         errors = self.browser.find_by_css('.errorlist')
-        error_text = errors[0].text
+        feedback = errors[0].text
 
-        eq_(1, len(errors), msg=None)
-        eq_(u'This field is required.', error_text, msg=None)
+        assert len(errors) == 1 and feedback == u'This field is required.'
 
-    def test_login_with_injected_string(self):
+    def test_login_with_ldap_injected_string(self):
         """
         Test user login for LDAP injection.
 
-        Example:
-          When checking the presence of a user/password:
+        Note:
+          Logging in a user might look like:
               (&(nid=foo)(password=bar))
 
-          When given a valid NID, and an injected query:
+          Part of this relies heavily on knowing a valid user NID. When
+          appended with an injected string, we want a query similar to:
               (&(nid=foo)(&))(password=bar))
         """
         auth = get_credentials()
 
         # Check to see if we can bypass the login by adding a LDAP query.
         # Because this query is always true, the password doesn't matter.
-        # See: https://www.owasp.org/index.php/Testing_for_LDAP_Injection_(OTG-INPVAL-006).
+        # Link: https://www.owasp.org/index.php/Testing_for_LDAP_Injection_(OTG-INPVAL-006).
+
         login(browser=self.browser,
               url=self.login_url,
               nid=auth['unify-events']['nid'] + ')(&))',
               password='password')
-        error = self.browser.find_by_xpath('//*[(@id="manager-base")]//li')
-        error_message = error[0].text
 
-        # If all is well, we shouldn't be viewing his or her calendar(s).
-        eq_('Please enter a correct username and password. '
-            'Note that both fields may be case-sensitive.', error_message, msg=None)
-        ok_(self.browser.is_text_not_present('My Calendars'), msg=None)
+        error = self.browser.find_by_xpath('//*[(@id="manager-base")]//li')
+        feedback = error[0].text
+
+        assert feedback == \
+            'Please enter a correct username and password. ' \
+            'Note that both fields may be case-sensitive.'
+        assert self.browser.is_text_not_present('My Calendars')
 
     def test_user_can_login_successfully(self):
         """
@@ -155,16 +183,17 @@ class TestUserAuthentication(LiveServerTestCase):
 
         username = self.browser.find_by_css('.username')[0].text
 
-        # Are we viewing our login page as our targeted user?
-        ok_(grep(r'Hi, [a-zA-Z]+', username) is not None, msg=None)
-        ok_(self.browser.is_text_present('My Calendars'), msg=None)
+        # Are we viewing our login page as our Events user?
 
-        logout_button = self.browser.find_by_xpath('//span[text()="Log Out"]')
-        logout_button[0].click()
+        assert grep(r'Hi, [a-zA-Z]+', username)
+        assert self.browser.is_text_present('My Calendars')
 
-        eq_('You have logged out of the UCF Events system.',
-            self.browser.find_by_xpath('//h1/following-sibling::p[1]')[0].text,
-            msg=None)
+        self.browser.find_by_xpath('//span[text()="Log Out"]')[0].click()
+
+        xpath_query = '//h1/following-sibling::p[1]'
+        logout_text = self.browser.find_by_xpath(xpath_query)[0].text
+
+        assert logout_text == 'You have logged out of the UCF Events system.'
 
 class TestCalendarCreation(LiveServerTestCase):
 
@@ -194,50 +223,33 @@ class TestCalendarCreation(LiveServerTestCase):
         self.main_calendar.delete()
         self.browser.quit()
 
-    def create_calendar(self, title):
-        """
-        Create a ``Calendar`` with a specified title.
-        """
-        # Locate "My Calendars" dropdown menu.
-        self.browser.find_by_css('.actions-primary .dropdown-toggle')[0].click()
-
-        self.browser.click_link_by_partial_href('manager/calendar/create')
-        self.browser.fill('title', title)
-
-        self.browser.find_by_xpath(
-            '//button[text()="Create Calendar"]')[0].click()
-
-        # Check if the calendar was created.
-        message = self.browser.find_by_xpath(
-            '//li[starts-with(., "{0}")]'.format(title))[0].text
-
-        eq_('{0} was created successfully.'.format(title), message, msg=None)
-
-        self.browser.find_by_css('.actions-primary .dropdown-toggle')[0].click()
-
-        # Click the created calendar by link.
-        self.browser.find_by_xpath(
-            '//a[contains(., "{0}")]'.format(title))[0].click()
-
-    def fuzz_blindly(self, path):
+    def fuzz_blindly(self):
         """
         A light-weight "fuzzer" to test unexpected user-input.
 
         See:
-          [0x00]: http://pages.cs.wisc.edu/~bart/fuzz/
-          [0x01]: https://csg.utdallas.edu/wp-content/uploads-2012/10/Fuzzing-Part-1.pdf
+          [0x01]: http://pages.cs.wisc.edu/~bart/fuzz/
 
         Args:
           path (list[str]): The text file to fuzz against.
         """
-        pass
+        with open(FUZZ_VECTORS) as vectors:
+            fuzz = [line for line in vectors.read().splitlines() if line != ''
+                        and not grep(r'^={3}', line)]
+
+        for vector in fuzz:
+            create_calendar(title=vector)
+            h1 = self.browser.find_by_xpath('//h1').value
+            if h1.lower() == '500 - internal server error':
+                assert 0, 'broke on: "{0}"'.format(vector)
+            self.browser.back()
 
     def test_create_calendar(self):
         """
         Test ``Calendar`` creation with expected input.
         """
-        self.create_calendar(title='Knightsec Events')
+        create_calendar(self.browser, title='Knightsec Events')
         h1 = self.browser.find_by_xpath('//h1').value
 
-        # Verify we're viewing the correct calendar.
-        eq_('My Calendar: {0}'.format('Knightsec Events'), h1, msg=None)
+        # Verify we're viewing the calendar we created.
+        assert h1 == 'My Calendar: {0}'.format('Knightsec Events')
