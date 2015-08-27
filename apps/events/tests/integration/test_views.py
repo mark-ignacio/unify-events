@@ -20,7 +20,7 @@ import os
 
 
 FUZZ_VECTORS = join(dirname(realpath(__file__)), 'fuzz', 'fuzz.txt')
-CREDENTIALS = join(dirname(realpath(__file__)), 'auth', 'credentials.json')
+CREDENTIALS  = join(dirname(realpath(__file__)), 'auth', 'credentials.json')
 
 def get_credentials():
     """
@@ -195,7 +195,7 @@ class TestUserAuthentication(LiveServerTestCase):
 
         assert logout_text == 'You have logged out of the UCF Events system.'
 
-class TestCalendarCreation(LiveServerTestCase):
+class TestUserCreatingACalendar(LiveServerTestCase):
 
     """
     Test ``Calendar`` Creation.
@@ -227,8 +227,11 @@ class TestCalendarCreation(LiveServerTestCase):
         """
         A light-weight "fuzzer" to test unexpected user-input.
 
+        Note:
+          Bug patched on [08.25.15].
+
         See:
-          [0x01]: http://pages.cs.wisc.edu/~bart/fuzz/
+          [0x00]: http://pages.cs.wisc.edu/~bart/fuzz/
 
         Args:
           path (list[str]): The text file to fuzz against.
@@ -244,7 +247,7 @@ class TestCalendarCreation(LiveServerTestCase):
                 assert 0, 'broke on: "{0}"'.format(vector)
             self.browser.back()
 
-    def test_create_calendar(self):
+    def test_creating_a_calendar(self):
         """
         Test ``Calendar`` creation with expected input.
         """
