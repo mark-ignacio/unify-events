@@ -237,8 +237,8 @@ class TestUserCreatingACalendar(LiveServerTestCase):
           path (list[str]): The text file to fuzz against.
         """
         with open(FUZZ_VECTORS) as vectors:
-            fuzz = [line for line in vectors.read().splitlines() if line != ''
-                        and not grep(r'^={3}', line)]
+            fuzz = [v.decode('utf_8') for v in vectors.read().splitlines() if v
+                    and not v.startswith('=' * 3)]
 
         for vector in fuzz:
             create_calendar(title=vector)
