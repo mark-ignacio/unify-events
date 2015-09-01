@@ -246,6 +246,10 @@ class TestUserCreatingACalendar(LiveServerTestCase):
             if h1.lower() == '500 - internal server error':
                 assert 0, 'broke on: "{0}"'.format(vector)
             self.browser.back()
+            
+            xpath = '//h1[contains(., "My Calendars")]'
+            if not self.browser.is_element_present_by_xpath(xpath, wait_time=4.5):
+                self.fail("calendar page didn't load in time!")
 
     def test_creating_a_calendar(self):
         """
