@@ -13,6 +13,7 @@ from ..factories.factories import LocationFactory
 from ..factories.factories import EventInstanceFactory
 from ..factories.factories import Event, EventInstance
 
+import re
 from re import match as grep
 
 from random import choice
@@ -73,7 +74,7 @@ class TestEventModel(TestCase):
         """
         cls.user = UserFactory()
 
-        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None, pk=settings.FRONT_PAGE_CALENDAR_PK)
         cls.user_calendar = CalendarFactory(title='My Events', owner=cls.user)
         cls.category = CategoryFactory(title='Academic')
 
@@ -127,7 +128,8 @@ class TestEventModel(TestCase):
         """
         Test that an ``Event`` creates an event permalink.
         """
-        regex = r'https?://unify-events\.smca\.ucf\.edu/event/\d{1,}/(?P<slug>[-\w]+)/'
+        canonical_root = re.escape(settings.CANONICAL_ROOT).replace('http://', 'https?://')
+        regex = (r'%s/event/\d{1,}/(?P<slug>[-\w]+)/') % canonical_root
         match = grep(regex, self.user_event.get_absolute_url())
 
         assert match and match.group('slug') == 'garage-sale-all-welcome'
@@ -148,7 +150,7 @@ class TestCalendarModel(TestCase):
                                password='qwerty',
                                email='dylonmackAg3@crazespaces.pw')
 
-        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        cls.main_calendar = CalendarFactory(title='Events at UCF', owner=None, pk=settings.FRONT_PAGE_CALENDAR_PK)
         cls.user_calendar = CalendarFactory(title='Knightsec Events',
                                             owner=cls.user,
                                             description='CTFs')
