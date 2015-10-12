@@ -96,7 +96,7 @@ class TestUserAuthentication(LiveServerTestCase):
         """
         Setup a ``Browser`` instance.
         """
-        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None, pk=settings.FRONT_PAGE_CALENDAR_PK)
 
         self.browser = Browser('firefox')
         self.login_url = self.live_server_url + '/manager/login/'
@@ -205,7 +205,7 @@ class TestUserCreatingACalendar(LiveServerTestCase):
         """
         Setup a ``Browser`` instance.
         """
-        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None)
+        self.main_calendar = CalendarFactory(title='Events at UCF', owner=None, pk=settings.FRONT_PAGE_CALENDAR_PK)
 
         self.browser = Browser('firefox')
         self.login_url = self.live_server_url + '/manager/login/'
@@ -246,7 +246,7 @@ class TestUserCreatingACalendar(LiveServerTestCase):
             if h1.lower() == '500 - internal server error':
                 assert 0, 'broke on: "{0}"'.format(vector)
             self.browser.back()
-            
+
             xpath = '//h1[contains(., "My Calendars")]'
             if not self.browser.is_element_present_by_xpath(xpath, wait_time=4.5):
                 self.fail("calendar page didn't load in time!")
