@@ -210,23 +210,49 @@ class TestEventForm(TestCase):
 
         assert choices[0][1] == u'Morrissey Concert'
 
-    def test_event_form_on_clean_with_naughty_tags(self):
+    def test_event_form_tag_limit(self):
         """
-        Test that ``Event`` form cleanses invalid tags.
+        Test that ``Event`` form enforces a max limit of 5 tags.
         """
-        tags = ['^@',
-                '\\',
-                '[]',
-                '\'',
-                '`',
-                '&quot;',
-                '"',
-                ';',
-                '*']
+        tags = ['Tag One',
+                'Tag Two',
+                'Tag Three',
+                'Tag Four',
+                'Tag Five',
+                'Tag Six']
 
         form = EventForm(initial={'user_calendars': self.user.calendars},
                          data=event_data(self.user_event, options=dict(tags=tags)),
                          instance=self.user_event)
 
-        assert form.is_valid() and \
-            all(tag == u'' for tag in form.clean()['tags'])
+        assert not form.is_valid() and form.errors['tags'][0] == \
+            u'Please provide no more than 5 tags that best describe your event.'
+
+    def test_event_form_on_clean_with_naughty_tags(self):
+        """
+        Test that ``Event`` form cleanses invalid tags.
+        """
+        tags_1 = ['^@',
+                  '\\',
+                  '[]',
+                  '\'',
+                  '`']
+
+        tags_2 = ['&quot;',
+                  '"',
+                  ';',
+                  '*']
+
+        form_1 = EventForm(initial={'user_calendars': self.user.calendars},
+                         data=event_data(self.user_event, options=dict(tags=tags_1)),
+                         instance=self.user_event)
+
+        form_2 = EventForm(initial={'user_calendars': self.user.calendars},
+                         data=event_data(self.user_event, options=dict(tags=tags_2)),
+                         instance=self.user_event)
+
+        assert form_1.is_valid() and \
+            all(tag == u'' for tag in form_1.clean()['tags'])
+
+        assert form_2.is_valid() and \
+            all(tag == u'' for tag in form_2.clean()['tags'])
