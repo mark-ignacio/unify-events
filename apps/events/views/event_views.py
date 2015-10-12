@@ -74,7 +74,10 @@ class CalendarEventsBaseListView(ListView):
                     # Value is None so return right away no date url parameter was provided.
                     return date_param
                 else:
-                    date_value = int(date_param)
+                    if (param in ['day', 'month'] and len(date_param) > 2) or (param == 'year' and len(date_param) > 4):
+                        return date_param
+                    else:
+                        date_value = int(date_param)
 
                 setattr(self, param, date_value)
             return date_value
@@ -119,9 +122,15 @@ class CalendarEventsBaseListView(ListView):
         if not start_date:
             day_month_year = self.get_day_month_year()
             try:
-                start_date = datetime(day_month_year[2], day_month_year[1] or 1, day_month_year[0] or 1)
+                if day_month_year[0] in xrange(1, 32) and day_month_year[1] in xrange(1, 13):
+                    start_date = datetime(day_month_year[2] or 1, day_month_year[1] or 1, day_month_year[0] or 1)
+                else:
+                    raise Http404
             except ValueError:
                 # Date is invalid; stop here
+                raise Http404
+            except TypeError:
+                # Year param was passed as a string
                 raise Http404
 
         self.start_date = start_date
@@ -586,6 +595,28 @@ class MonthEventsListView(CalendarEventsListView):
     list_type = 'month'
     list_title = 'Events This Month'
 
+    def get_start_date(self):
+        """
+        Returns the start date or creates an start date based on the url parameters.
+        """
+        start_date = self.start_date
+        if not start_date:
+            day_month_year = self.get_day_month_year()
+            try:
+                if day_month_year[1] in xrange(1, 13):
+                    start_date = datetime(day_month_year[2] or 1, day_month_year[1] or 1, day_month_year[0] or 1)
+                else:
+                    raise Http404
+            except ValueError:
+                # Date is invalid; stop here
+                raise Http404
+            except TypeError:
+                # Year parameter was passed as a string
+                raise Http404
+
+        self.start_date = start_date
+        return start_date
+
     def get_end_date(self):
         """
         Returns the end date that is one day past today.
@@ -655,6 +686,25 @@ class YearEventsListView(CalendarEventsListView):
     """
     list_type = 'year'
     list_title = 'Events This Year'
+
+    def get_start_date(self):
+        """
+        Returns the start date or creates an start date based on the url parameters.
+        """
+        start_date = self.start_date
+        if not start_date:
+            day_month_year = self.get_day_month_year()
+            try:
+                start_date = datetime(day_month_year[2] or 1, 1, 1) 
+            except ValueError:
+                # Date is invalid; stop here
+                raise Http404
+            except TypeError:
+                # Year param was passed as a string
+                raise Http404
+
+        self.start_date = start_date
+        return start_date
 
     def get_end_date(self):
         """

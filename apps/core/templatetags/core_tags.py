@@ -13,6 +13,8 @@ from django.utils.html import escapejs
 from django.utils.safestring import mark_safe
 
 from core.views import esi
+from events.functions import remove_html
+import settings
 
 register = template.Library()
 
@@ -125,119 +127,27 @@ def quote_plus(value):
     return urllib.quote_plus(value.encode('utf-8'))
 
 
-bleach_args = {}
-possible_settings = {
-    'BLEACH_ALLOWED_TAGS': 'tags',
-    'BLEACH_ALLOWED_ATTRIBUTES': 'attributes',
-    'BLEACH_ALLOWED_STYLES': 'styles',
-    'BLEACH_STRIP_TAGS': 'strip',
-    'BLEACH_STRIP_COMMENTS': 'strip_comments',
-}
-
-for setting, kwarg in possible_settings.iteritems():
-    if hasattr(settings, setting):
-        bleach_args[kwarg] = getattr(settings, setting)
-
-
-def custom_clean(value):
+@register.filter(name='remove_html')
+def custom_striptags(value):
     """
-    Custom function that uses Bleach and BeautifulSoup to remove unwanted
-    markup and contents. Uses settings from the django-bleach module.
-
-    Args:
-      value (str): The given HTML markup.
-
-    Returns:
-      unicode: The sanitized HTML markup (unicode).
+    Non-regex-based striptags replacement, using Bleach.
     """
-    if value:
-        # not None or empty string
-
-        # Replace newline instances with linebreaks. Remove carriage returns.
-        value = value.replace('\n', '<br />')
-        value = value.replace('\r', '')
-
-        # Convert brackets so BeautifulSoup can parse django-cleaned stuff.
-        # Even if it's an escaped <script> tag, we want to get rid of it.
-        value = value.replace('&lt;', '<')
-        value = value.replace('&gt;', '>')
-
-        soup = BeautifulSoup(value)
-        all_tags = soup.findAll(True)
-        for tag in all_tags:
-            if tag.name in settings.BANNED_TAGS:
-                tag.extract()
-
-        value = bleach.clean(soup, **bleach_args)
+    value = remove_html(value)
     return value
 
 
-@register.filter(name='custom_clean')
-def custom_clean_safe(value):
-    """Custom template filter to safely remove markup contents.
-
-    Args:
-      values (str): The given HTML markup text.
-
-    Returns:
-      obj: The marked safe string (django.utils.safestring.SafeBytes).
-    """
-    if value is None:
-        value = ''
-
-    value = custom_clean(value)
-
-    # Make sure we actually have something left to display
-    if not value.strip():
-        value = settings.FALLBACK_EVENT_DESCRIPTION
-
-    return mark_safe(value)
+@register.filter
+def bleach_linkify_noemail(value):
+    return bleach.linkify(value, parse_email=False)
 
 
 @register.filter
-def clean_and_linkify(value):
-    """
-    Removes unwanted HTML markup and contents and auto-generates link tags.
-
-    Args:
-      value (str): The given HTML markup text to mark safe.
-
-    Returns:
-      obj: The marked safe string (django.utils.safestring.SafeBytes).
-    """
-    if value is None:
-        value = ''
-
-    # Clean everything.
-    stripped = custom_clean(value)
-
-    # Linkify whatever is left
-    new_value = bleach.linkify(stripped, parse_email=False)
-
-    # Make sure we actually have something left to display
-    if not new_value.strip():
-        new_value = settings.FALLBACK_EVENT_DESCRIPTION
-
-    return mark_safe(new_value)
-
-
-@register.filter
-def custom_clean_escapeics(value):
+def escapeics(value):
     """
     Converts HTML markup to plaintext suitable for ICS format.
-    Runs custom_clean() to ensure content is safe.
-
-    Args:
-      value (str): The given HTML markup text to mark safe.
-
-    Returns:
-      obj: The marked safe string (django.utils.safestring.SafeBytes).
     """
     if value is None:
         value = ''
-
-    # Clean the value
-    value = custom_clean(value)
 
     # Convert to text.
     h2t = html2text.HTML2Text()
@@ -248,42 +158,11 @@ def custom_clean_escapeics(value):
     # http://stackoverflow.com/a/12249023
     value = value.replace('\n', '\\n')
 
-    # Make sure we actually have something left to display
-    if not value.strip():
-        value = settings.FALLBACK_EVENT_DESCRIPTION
-
     return mark_safe(value)
 
 
 @register.filter
-def custom_clean_escapejs(value):
-    """
-    Converts HTML markup to a string that is JavaScript-safe.
-
-    Args:
-      value (str): The given JavaScript text to mark safe.
-
-    Returns:
-      obj: The marked safe string (django.utils.safestring.SafeBytes).
-    """
-    if value is None:
-        value = ''
-
-    # Clean the value
-    value = custom_clean(value)
-
-    # Escape value for js use
-    value = escapejs(value)
-
-    # Make sure we actually have something left to display
-    if not value.strip():
-        value = settings.FALLBACK_EVENT_DESCRIPTION
-
-    return mark_safe(value)
-
-
-@register.filter
-def custom_clean_escapexml(value):
+def escapexml(value):
     """
     Cleans xml text based on w3 standards (http://www.w3.org/TR/REC-xml/).
 
@@ -300,13 +179,7 @@ def custom_clean_escapexml(value):
     if value is None:
         value = ''
 
-    value = custom_clean(value)
-
     illegal_xml_chars_regex = re.compile(settings.ILLEGAL_XML_CHARS)
     value = illegal_xml_chars_regex.sub('', value)
 
-    # Make sure we actually have something left to display
-    if not value.strip():
-        value = settings.FALLBACK_EVENT_DESCRIPTION
-
-    return mark_safe(value)
+    return value

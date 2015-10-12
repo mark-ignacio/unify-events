@@ -97,24 +97,30 @@ If you use a branch to develop a feature, make sure to delete the old branch onc
 
 ### Sass
 
-#### Codekit Setup
-This project is configured to compile .scss assets and javascript files (located in `static_files/assets/`) using Codekit 2.x. Before modifying any style-related files, create a new project with this repo in Codekit (see Codekit docs: http://incident57.com/codekit/help.html)
+#### Gulp Setup
+This project uses gulp to handle various tasks, such as installation of bower packages, compiling and minifying sass files and minifying/uglifying javascript. Use the following steps to setup gulp for this project.
 
-After creating the new project, any modifications to files in `static_files/assets/` will automatically compile and minify to their respective `static_files/static/` locations.
+1. Make sure an up to date version of npm is installed.
+  * (OSX) brew install npm
+  * (Debian) apt-get install nodejs
+  * (RHEL) yum install npm
+2. Run `npm install` from the root directory to install node packages defined in package.json, including gulp and bower. Node packages will save to a `node_modules` directory in the root of this repository. This directory is in the `.gitignore` list and should not be pushed to repository.
+3. Install all front-end components and compile static assests by running `gulp default`. During development, run `gulp watch` to detect static file changes automatically. When a change is detected, minification and compilation commands will run automatically.
+4. Make sure up-to-date concatenated/minified files ("artifacts") are pushed to the repo when making changes to static files.
 
 #### Bootstrap
 This project uses the official Sass port of Twitter Bootstrap (https://github.com/twbs/bootstrap-sass) for base styling of templates. **Do not modify the files in this directory**--override variables as necessary in `static_files/assets/scss/style.scss`.
 
-The current version of Bootstrap is v3.2.0.
+The current version of Bootstrap is v3.3.5.
 
-To upgrade Bootstrap, download the latest tagged release and replace the `static_files/static/vendor/bootstrap/` directory contents in this repo with the downloaded `assets/` directory contents (do not copy the Bootstrap root directory.)  Make sure to compile `static_files/assets/scss/style.scss` AND `static_files/static/vendor/bootstrap/javascripts/bootstrap.js` after!
+To upgrade Bootstrap, specify the version number in `bower.json`.
 
 #### Font Awesome
 Version 4.0.3 of Font Awesome (http://fontawesome.io/) is used as a replacement for Bootstrap's Glyphicon icon library. **Do not modify the files in this directory**--override variables as necessary in `static_files/assets/scss/style.scss`.
 
 Note that these icons do not overwrite the Glyphicon library; both are available to use, but Font Awesome fonts are preferred. See the Font Awesome docs for usage.
 
-To upgrade, download the latest tagged release and replace the `static_files/static/vendor/fonts/font-awesome-4.x.x/` directory in this repo with the downloaded root directory.  Make sure to compile `static_files/assets/scss/style.scss` after!
+To upgrade, specify the version number in `bower.json`.
 
 #### Theme Sass Files
 All of the raw custom styles for this project are contained in separate Sass files in `static_files/assets/scss/`. When modifying stylesheets in this project, only modify the files in this directory; **do NOT modify files in `static_files/static/css/`**! Sass files compile and write to this directory.
@@ -140,3 +146,26 @@ Partial Sass files are generally separated out by function, and must be compiled
 9. `_views-backend.scss`
    Backend, view-specific styles. Make sure to label each view with specific comments, and group similar views together (i.e. a set of single Calendar view styles should go directly above or below already-defined Calendar view styles.)
 
+### Javascript
+
+#### Concatenation Details
+This project combines vendor javascript libraries with our own so fewer files need to be delivered to the client. The list below lays out the basic concatenation/uglification scheme.
+
+* script.min.js
+  * jquery.placeholder.js - *vender*
+  * bootstrap.js - *vendor*
+  * script.js - *project*
+* script-frontend.min.js
+  * script-frontend.js - *project*
+*script-backend.min.js
+  * bootstrap3-typeahead.js - *vendor*
+  * jquery.timepicker.js - *vendor*
+  * bootstrap-datepicker.js - *vendor*
+  * script-manager.js - *project*
+* wysiwyg.min.js
+  * wysihtml5-0.3.0.js - *vendor*
+  * bootstrap3-wysihtml5.js - *vendor*
+
+Scripts marked `*vendor*` can be found in `static_files/assets/components` and are installed by bower during the gulp processing. These files should not be edited.
+
+Scripts marked `*project*` are scripts maintained by this project and can found in `static_files/assets/js`.

@@ -8,7 +8,7 @@
 {% block title %}{{ event_instance.event.get_title_canceled }}{% if not event_instance.event.calendar.is_main_calendar %} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% endif %} | {{ block.super }}{% endblock %}
 {% block og_title %}{{ event_instance.event.get_title_canceled }}{% if not event_instance.event.calendar.is_main_calendar %} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% endif %} | {{ block.super }}{% endblock %}
 
-{% block meta_description %}{% block og_description %}{% if event_instance.event.description|striptags == FALLBACK_EVENT_DESCRIPTION %}Join us on {{ event_instance.start|date:"F j, Y" }} for {{ event_instance.event.title }} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% else %}{{ event_instance.event.description|striptags|truncatechars:150 }} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% endif %}{% endblock %}{% endblock %}
+{% block meta_description %}{% block og_description %}{% if not event_instance.event.description|remove_html %}Join us on {{ event_instance.start|date:"F j, Y" }} for {{ event_instance.event.title }} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% else %}{{ event_instance.event.description|remove_html|truncatechars:150 }} | {% include_esi 'calendar' event_instance.event.calendar.pk 'title' %}{% endif %}{% endblock %}{% endblock %}
 
 {% block meta_date %}{{ event_instance.start|date:"c" }}{% endblock %}
 
@@ -94,7 +94,7 @@
 <div class="row">
     <div class="col-md-8 col-sm-8 sidebarfix page-content" id="event-single">
         <div class="event-content content-expand description">
-            {{ event_instance.event.description|clean_and_linkify }}
+            {{ event_instance.event.description.strip|bleach_linkify_noemail|safe|default:FALLBACK_EVENT_DESCRIPTION }}
             <a class="content-expander visible-xs" href="#"><i class="fa fa-caret-down"></i></a>
         </div>
 
