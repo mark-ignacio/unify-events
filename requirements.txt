@@ -12,6 +12,7 @@ html2text==2014.7.3
 html5lib==0.999
 newrelic==2.20.1.18
 ordereddict==1.1
+psutil==3.2.2
 # Note: Haystack 2.1.0 requires the unofficial pyelasticsearch package.
 # Haystack v2.1.1 should implement the official elasticsearch-py package.
 pyelasticsearch==0.6.1
