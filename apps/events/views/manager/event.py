@@ -17,6 +17,7 @@ from django.views.generic import TemplateView
 from django.views.generic import UpdateView
 
 from core.forms import RequiredModelFormSet
+from core.newrelic_custom_metrics import *
 from core.views import DeleteSuccessMessageMixin
 from events.forms.manager import EventCopyForm
 from events.forms.manager import EventForm
@@ -33,7 +34,7 @@ from taggit.models import Tag
 
 log = logging.getLogger(__name__)
 
-
+@custom_memory_usage_node('Custom/Memory/event_create')
 class EventCreate(CreateView):
     model = Event
     form_class = EventForm
@@ -154,7 +155,7 @@ class EventCreate(CreateView):
             self.get_context_data(form=form,
                                   event_instance_formset=event_instance_formset))
 
-
+@custom_memory_usage_node('Custom/Memory/event_update')
 class EventUpdate(UpdateView):
     model = Event
     form_class = EventForm
