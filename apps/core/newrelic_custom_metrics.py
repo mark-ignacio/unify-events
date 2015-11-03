@@ -12,12 +12,12 @@ class CustomMemoryUsageNode(object):
         self.end_memory_physical = None
 
     def __enter__(self):
-        m = get_memory()
+        m = self.get_memory()
         self.start_memory_physical = float(m.rss)/(1024*1024)
         return self
 
-    def __exit__(self):
-        m = p.get_memory()
+    def __exit__(self, exc, value, tb):
+        m = self.get_memory()
         self.end_memory_physical = float(m.rss)/(1024*1024)
 
         physical_delta = self.end_memory_physical - self.start_memory_physical
@@ -27,8 +27,10 @@ class CustomMemoryUsageNode(object):
 
     def get_memory(self):
         pid = os.getpid()
+        print pid
         p = psutil.Process(pid)
-        return p.get_memory_info
+        print p
+        return p.memory_info()
 
 def custom_memory_usage_node(name):
     def _decorator(f):

@@ -17,6 +17,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 from core.utils import format_to_mimetype
+from core.newrelic_custom_metrics import *
 from events.models import Calendar
 
 log = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ def esi_template(request, path):
     return render_to_response(path, {}, RequestContext(request))
 
 
+@custom_memory_usage_node('Custom/Memory/esi')
 def esi(request, model_name, object_id, template_name, calendar_id=None, params=None):
     """
     Returns the HTML for a given model and id for ESIs
