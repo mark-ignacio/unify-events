@@ -87,7 +87,6 @@ class EventCreate(CreateView):
         return self.render_to_response(self.get_context_data(form=form,
                                                              event_instance_formset=event_instance_formset))
 
-    @custom_memory_usage_node('Custom/Memory/event_create')
     def post(self, request, *args, **kwargs):
         """
         Checks the form and formset validity and user permissions on
@@ -106,6 +105,7 @@ class EventCreate(CreateView):
         else:
             return self.form_invalid(form, event_instance_formset)
 
+    @custom_memory_usage_node('Custom/Memory/event_create')
     def form_valid(self, form, event_instance_formset):
         """
         Called if all forms are valid. Sets event creator.
@@ -209,7 +209,6 @@ class EventUpdate(UpdateView):
         return self.render_to_response(self.get_context_data(form=form,
                                                              event_instance_formset=event_instance_formset))
 
-    @custom_memory_usage_node('Custom/Memory/event_update')
     def post(self, request, *args, **kwargs):
         """
         Checks the form and formset validity and user permissions on
@@ -244,6 +243,7 @@ class EventUpdate(UpdateView):
             })
         return super(EventUpdate, self).get_success_url()
 
+    @custom_memory_usage_node('Custom/Memory/event_update')
     def form_valid(self, form, event_instance_formset):
         """
         Called if all forms are valid. Creates an event instance
