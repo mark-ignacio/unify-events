@@ -34,7 +34,6 @@ from taggit.models import Tag
 
 log = logging.getLogger(__name__)
 
-@custom_memory_usage_node('Custom/Memory/event_create')
 class EventCreate(CreateView):
     model = Event
     form_class = EventForm
@@ -88,6 +87,7 @@ class EventCreate(CreateView):
         return self.render_to_response(self.get_context_data(form=form,
                                                              event_instance_formset=event_instance_formset))
 
+    @custom_memory_usage_node('Custom/Memory/event_create')
     def post(self, request, *args, **kwargs):
         """
         Checks the form and formset validity and user permissions on
@@ -155,7 +155,6 @@ class EventCreate(CreateView):
             self.get_context_data(form=form,
                                   event_instance_formset=event_instance_formset))
 
-@custom_memory_usage_node('Custom/Memory/event_update')
 class EventUpdate(UpdateView):
     model = Event
     form_class = EventForm
@@ -210,6 +209,7 @@ class EventUpdate(UpdateView):
         return self.render_to_response(self.get_context_data(form=form,
                                                              event_instance_formset=event_instance_formset))
 
+    @custom_memory_usage_node('Custom/Memory/event_update')
     def post(self, request, *args, **kwargs):
         """
         Checks the form and formset validity and user permissions on
