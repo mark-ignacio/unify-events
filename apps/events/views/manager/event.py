@@ -65,6 +65,7 @@ class EventCreate(CreateView):
 
         return ctx
 
+    @custom_memory_usage_node('Custom/Memory/event_create_get')
     def get(self, request, *args, **kwargs):
         """
         Handles the GET request and instantiates blank versions
@@ -189,6 +190,7 @@ class EventUpdate(UpdateView):
 
         return ctx
 
+    @custom_memory_usage_node('Custom/Memory/event_update_get')
     def get(self, request, *args, **kwargs):
         """
         Handles the GET request and instantiates the object for
